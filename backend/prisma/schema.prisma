@@ -1,0 +1,563 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PlanType {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  USER
+}
+
+enum UserType {
+  DEVELOPER
+  TESTER
+  UI_UX_DESIGNER
+  DEPLOYMENT_MANAGER
+  PROJECT_COORDINATOR
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum StageType {
+  REQUIREMENT_SPECIFICATION
+  BASIC_LAYOUT_PLANNING
+  TECH_STACK_APPROVAL
+  DEVELOPMENT
+  TESTING
+  DEPLOYMENT
+  MAINTENANCE
+  FEATURE_ENHANCEMENTS
+}
+
+enum StageStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+  COMPLETED
+}
+
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  UNDER_REVIEW
+  BLOCKED
+  COMPLETED
+}
+
+enum BugSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BugStatus {
+  OPEN
+  IN_PROGRESS
+  FIXED
+  VERIFIED
+  CLOSED
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum FeatureStatus {
+  REQUESTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum FileEntity {
+  REQUIREMENT
+  LAYOUT
+  TECH_STACK
+  DAILY_LOG
+  TESTING
+  DEPLOYMENT
+  MAINTENANCE
+  FEATURE
+}
+
+enum NotificationType {
+  PROJECT_ASSIGNED
+  STAGE_CHANGED
+  APPROVAL_REQUESTED
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+  TESTING_ASSIGNED
+  DEPLOYMENT_PENDING
+  DAILY_LOG_MISSING
+  MAINTENANCE_ASSIGNED
+  FEATURE_ASSIGNED
+}
+
+enum ActionType {
+  LOGIN
+  LOGOUT
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_DELETED
+  STAGE_CHANGED
+  STAGE_APPROVED
+  STAGE_REJECTED
+  USER_INVITED
+  USER_JOINED
+  FILE_UPLOADED
+  FILE_DELETED
+  FILE_DOWNLOADED
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_STATUS_CHANGED
+  DAILY_LOG_SUBMITTED
+  TESTING_REPORT_SUBMITTED
+  DEPLOYMENT_UPDATED
+  DEPLOYMENT_COMPLETED
+  MAINTENANCE_LOG_CREATED
+  MAINTENANCE_LOG_RESOLVED
+  FEATURE_REQUEST_CREATED
+  FEATURE_REQUEST_COMPLETED
+}
+
+model Organization {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  ownerEmail    String
+  plan          PlanType @default(FREE)
+  isActive      Boolean  @default(true)
+  
+  // Mandatory fields
+  organizationId String  @default("")
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  isDeleted      Boolean  @default(false)
+
+  users          User[]
+}
+
+model User {
+  id               String       @id @default(cuid())
+  organizationId   String
+  fullName         String
+  email            String
+  passwordHash     String
+  role             UserRole     @default(USER)
+  userType         UserType     @default(DEVELOPER)
+  isActive         Boolean      @default(true)
+  invitedBy        String?
+  inviteAccepted   Boolean      @default(false)
+  lastLoginAt      DateTime?
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  isDeleted        Boolean      @default(false)
+
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  projectUsers     ProjectUser[]
+
+  @@unique([email, organizationId])
+}
+
+model Project {
+  id               String        @id @default(cuid())
+  organizationId   String
+  name             String
+  clientName       String
+  description      String
+  priority         Priority      @default(MEDIUM)
+  status           ProjectStatus @default(ACTIVE)
+  currentStage     StageType     @default(REQUIREMENT_SPECIFICATION)
+  startDate        DateTime
+  deadline         DateTime
+  progressPercent  Int           @default(0)
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  isDeleted        Boolean       @default(false)
+
+  projectUsers      ProjectUser[]
+  projectStages     ProjectStage[]
+  sprints           Sprint[]
+  tasks             Task[]
+  dailyLogs         DailyLog[]
+  testingReports    TestingReport[]
+  deploymentDetail  DeploymentDetail?
+  maintenanceLogs   MaintenanceLog[]
+  featureRequests   FeatureRequest[]
+  projectFiles      ProjectFile[]
+}
+
+model ProjectUser {
+  id               String   @id @default(cuid())
+  projectId        String
+  userId           String
+  organizationId   String
+  assignedAt       DateTime @default(now())
+  assignedBy       String
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  isDeleted        Boolean  @default(false)
+
+  project          Project  @relation(fields: [projectId], references: [id])
+  user             User     @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+}
+
+model ProjectStage {
+  id               String      @id @default(cuid())
+  projectId        String
+  organizationId   String
+  stageType        StageType
+  status           StageStatus @default(PENDING)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  approvedBy       String?
+  approvalNotes    String?
+  rejectionNotes   String?
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  isDeleted        Boolean     @default(false)
+
+  project          Project     @relation(fields: [projectId], references: [id])
+}
+
+model Sprint {
+  id               String       @id @default(cuid())
+  projectId        String
+  organizationId   String
+  name             String
+  goal             String?
+  startDate        DateTime
+  endDate          DateTime
+  status           SprintStatus @default(PLANNED)
+  completionPercent Int         @default(0)
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  isDeleted        Boolean      @default(false)
+
+  project          Project      @relation(fields: [projectId], references: [id])
+  tasks            Task[]
+}
+
+model Task {
+  id               String      @id @default(cuid())
+  projectId        String
+  sprintId         String?
+  organizationId   String
+  title            String
+  description      String?
+  status           TaskStatus  @default(NOT_STARTED)
+  priority         Priority    @default(MEDIUM)
+  assignedTo       String?
+  dueDate          DateTime?
+  estimatedHours   Float?
+  actualHours      Float?
+  progressPercent  Int         @default(0)
+  parentTaskId     String?
+  dependsOnTaskId  String?
+  labels           String[]
+  commitLinks      String[]
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  isDeleted        Boolean     @default(false)
+
+  project          Project     @relation(fields: [projectId], references: [id])
+  sprint           Sprint?     @relation(fields: [sprintId], references: [id])
+  taskComments     TaskComment[]
+}
+
+model TaskComment {
+  id               String   @id @default(cuid())
+  taskId           String
+  organizationId   String
+  content          String
+  isInternal       Boolean  @default(false)
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  isDeleted        Boolean  @default(false)
+
+  task             Task     @relation(fields: [taskId], references: [id])
+}
+
+model DailyLog {
+  id               String   @id @default(cuid())
+  projectId        String
+  organizationId   String
+  date             DateTime
+  moduleWorkedOn   String
+  tasksCompleted   String
+  pendingTasks     String
+  hoursWorked      Float
+  issuesBlockers   String?
+  commitLinks      String[]
+  notes            String?
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  isDeleted        Boolean  @default(false)
+
+  project          Project  @relation(fields: [projectId], references: [id])
+}
+
+model TestingReport {
+  id               String      @id @default(cuid())
+  projectId        String
+  organizationId   String
+  testCaseId       String
+  moduleTested     String
+  bugDescription   String
+  reproductionSteps String
+  severity         BugSeverity
+  status           BugStatus   @default(OPEN)
+  browserDevice    String
+  resolvedBy       String?
+  resolvedAt       DateTime?
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  isDeleted        Boolean     @default(false)
+
+  project          Project     @relation(fields: [projectId], references: [id])
+}
+
+model DeploymentDetail {
+  id                   String   @id @default(cuid())
+  projectId            String   @unique
+  organizationId       String
+  frontendPlatform     String?
+  domainName           String?
+  deploymentUrl        String?
+  frontendAccountOwner String?
+  cdnDetails           String?
+  backendProvider      String?
+  serverDetails        String?
+  runtimeEnvironment   String?
+  apiBaseUrl           String?
+  backendAccountOwner  String?
+  dbType               String?
+  dbProvider           String?
+  backupStrategy       String?
+  dbAccessOwner        String?
+  repoLinks            String[]
+  repoOwner            String?
+  branchStructure      String?
+  sslConfigured        Boolean  @default(false)
+  dnsConfigured        Boolean  @default(false)
+  monitoringEnabled    Boolean  @default(false)
+  loggingEnabled       Boolean  @default(false)
+  backupsEnabled       Boolean  @default(false)
+  errorTrackingEnabled Boolean  @default(false)
+  walkthroughVideoUrl  String?
+  isComplete           Boolean  @default(false)
+  
+  // Mandatory fields
+  createdBy            String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  isDeleted            Boolean  @default(false)
+
+  project              Project  @relation(fields: [projectId], references: [id])
+}
+
+model MaintenanceLog {
+  id               String            @id @default(cuid())
+  projectId        String
+  organizationId   String
+  issueTitle       String
+  description      String
+  severity         BugSeverity
+  assignedTo       String?
+  resolution       String?
+  timeTaken        Float?
+  resolutionNotes  String?
+  status           MaintenanceStatus @default(OPEN)
+  resolvedAt       DateTime?
+  updatedBy        String?
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  isDeleted        Boolean           @default(false)
+
+  project          Project           @relation(fields: [projectId], references: [id])
+}
+
+model FeatureRequest {
+  id               String        @id @default(cuid())
+  projectId        String
+  organizationId   String
+  title            String
+  description      String
+  assignedTo       String?
+  estimatedTimeline DateTime?
+  releaseVersion   String?
+  releaseNotes     String?
+  deployedAt       DateTime?
+  modulesChanged   String[]
+  status           FeatureStatus @default(REQUESTED)
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  isDeleted        Boolean       @default(false)
+
+  project          Project       @relation(fields: [projectId], references: [id])
+}
+
+model ProjectFile {
+  id               String     @id @default(cuid())
+  projectId        String
+  organizationId   String
+  linkedEntityType FileEntity
+  linkedEntityId   String
+  fileName         String
+  fileType         String
+  fileSize         Int
+  storageUrl       String
+  storageKey       String
+  downloadCount    Int        @default(0)
+  version          Int        @default(1)
+  uploadedBy       String
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  isDeleted        Boolean    @default(false)
+
+  project          Project    @relation(fields: [projectId], references: [id])
+}
+
+model Notification {
+  id               String           @id @default(cuid())
+  organizationId   String
+  userId           String
+  projectId        String?
+  type             NotificationType
+  title            String
+  message          String
+  link             String?
+  isRead           Boolean          @default(false)
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  isDeleted        Boolean          @default(false)
+}
+
+model ActivityLog {
+  id               String     @id @default(cuid())
+  organizationId   String
+  projectId        String?
+  userId           String
+  action           ActionType
+  entityType       String
+  entityId         String
+  description      String
+  metadata         Json?
+  ipAddress        String?
+  userAgent        String?
+  
+  // Mandatory fields
+  createdBy        String
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  isDeleted        Boolean    @default(false)
+}
+
+model InviteToken {
+  id               String     @id @default(cuid())
+  organizationId   String
+  email            String
+  token            String     @unique
+  role             UserRole
+  userType         UserType
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  invitedBy        String
+  
+  // Mandatory fields
+  createdBy        String       @default("")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  isDeleted        Boolean      @default(false)
+}
+
+model RefreshToken {
+  id               String   @id @default(cuid())
+  userId           String
+  token            String   @unique
+  expiresAt        DateTime
+  
+  // Mandatory fields
+  organizationId   String   @default("")
+  createdBy        String   @default("")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  isDeleted        Boolean  @default(false)
+}
