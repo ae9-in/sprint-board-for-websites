@@ -140,7 +140,7 @@ router.post('/login', async (req, res, next) => {
       console.log(`[Login] User not found: ${query.email}`);
       return res.status(401).json({
         success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'DEBUG: User not found in DB' }
+        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
       });
     }
 
@@ -148,7 +148,7 @@ router.post('/login', async (req, res, next) => {
       console.log(`[Login] User is inactive: ${query.email}`);
       return res.status(401).json({
         success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'DEBUG: User is inactive' }
+        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
       });
     }
 
@@ -158,13 +158,12 @@ router.post('/login', async (req, res, next) => {
       console.log(`[Login] Password mismatch for user: ${query.email}`);
       return res.status(401).json({
         success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'DEBUG: Password hash mismatch' }
+        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
       });
     }
 
     // Update last login
-    user.lastLoginAt = new Date();
-    await user.save();
+    await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
 
     // Generate tokens
     const accessToken = generateAccessToken(user);
