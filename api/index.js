@@ -14,7 +14,7 @@ export default async (req, res) => {
       console.error('❌ Vercel: DB Connection Error:', err);
       return res.status(500).json({ 
         success: false,
-        error: { code: 'DB_CONNECTION_FAILED', message: 'Database connection failed' } 
+        error: { code: 'DB_CONNECTION_FAILED', message: 'Database connection failed: ' + err.message } 
       });
     }
   }
