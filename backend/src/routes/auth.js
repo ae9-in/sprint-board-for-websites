@@ -138,20 +138,17 @@ router.post('/login', async (req, res, next) => {
 
     if (!user) {
       console.log(`[Login] User not found: ${query.email}`);
-      // Check if user exists at all (regardless of isDeleted)
-      const anyUser = await User.findOne({ email: query.email }).lean();
-      console.log(`[Login] User exists (any state): ${!!anyUser}, isDeleted: ${anyUser?.isDeleted}, isActive: ${anyUser?.isActive}`);
       return res.status(401).json({
         success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
+        error: { code: 'INVALID_CREDENTIALS', message: 'DEBUG: User not found in DB' }
       });
     }
 
     if (!user.isActive) {
-      console.log(`[Login] User is inactive: ${query.email}, isActive: ${user.isActive}`);
+      console.log(`[Login] User is inactive: ${query.email}`);
       return res.status(401).json({
         success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
+        error: { code: 'INVALID_CREDENTIALS', message: 'DEBUG: User is inactive' }
       });
     }
 
@@ -161,7 +158,7 @@ router.post('/login', async (req, res, next) => {
       console.log(`[Login] Password mismatch for user: ${query.email}`);
       return res.status(401).json({
         success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
+        error: { code: 'INVALID_CREDENTIALS', message: 'DEBUG: Password hash mismatch' }
       });
     }
 
