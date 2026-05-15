@@ -133,10 +133,14 @@ router.post('/login', async (req, res, next) => {
     }
 
     const query = { email: email.trim().toLowerCase(), isDeleted: false };
-    const user = await User.findOne(query);
+    console.log(`[Login] Attempt for: ${query.email}`);
+    const user = await User.findOne(query).lean();
 
     if (!user) {
       console.log(`[Login] User not found: ${query.email}`);
+      // Check if user exists at all (regardless of isDeleted)
+      const anyUser = await User.findOne({ email: query.email }).lean();
+      console.log(`[Login] User exists (any state): ${!!anyUser}, isDeleted: ${anyUser?.isDeleted}, isActive: ${anyUser?.isActive}`);
       return res.status(401).json({
         success: false,
         error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
@@ -144,7 +148,7 @@ router.post('/login', async (req, res, next) => {
     }
 
     if (!user.isActive) {
-      console.log(`[Login] User is inactive: ${query.email}`);
+      console.log(`[Login] User is inactive: ${query.email}, isActive: ${user.isActive}`);
       return res.status(401).json({
         success: false,
         error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
@@ -152,6 +156,7 @@ router.post('/login', async (req, res, next) => {
     }
 
     const valid = await comparePassword(password, user.passwordHash);
+    console.log(`[Login] Password validation result: ${valid}`);
     if (!valid) {
       console.log(`[Login] Password mismatch for user: ${query.email}`);
       return res.status(401).json({

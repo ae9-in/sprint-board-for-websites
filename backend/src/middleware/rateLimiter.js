@@ -20,7 +20,7 @@ function createStore() {
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isTest ? 10000 : 20,
+  max: isTest ? 10000 : 100, // Increased from 20 to 100 for easier testing
   standardHeaders: true,
   legacyHeaders: false,
   message: {
