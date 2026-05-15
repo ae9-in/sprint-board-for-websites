@@ -56,7 +56,8 @@ export default function errorHandler(err, req, res, next) {
     success: false,
     error: {
       code: 'INTERNAL_ERROR',
-      message: 'Internal server error'
+      message: 'Internal server error: ' + (err.message || 'Unknown error'),
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     }
   });
 }
