@@ -178,7 +178,7 @@ router.post('/login', async (req, res, next) => {
     }
 
     // Log activity
-    await ActivityLog.create({
+    await trackActivity({
       organizationId: user.organizationId,
       userId: user._id,
       action: 'LOGIN',
@@ -186,8 +186,7 @@ router.post('/login', async (req, res, next) => {
       entityId: user._id,
       description: 'User logged in',
       ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      createdBy: user._id
+      userAgent: req.headers['user-agent']
     });
 
     res.json({
