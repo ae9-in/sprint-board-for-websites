@@ -1,5 +1,13 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { motion } from 'framer-motion';
+import { 
+  Clock, 
+  CheckCircle2, 
+  MessageSquare, 
+  Paperclip,
+  MoreVertical
+} from 'lucide-react';
 import {
   formatPriority,
   getPriorityColor,
@@ -30,62 +38,100 @@ function KanbanCard({ task, isDragging = false }) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white p-3 border rounded-md shadow-sm cursor-grab active:cursor-grabbing ${
-        isDragging || isSortableDragging ? 'opacity-50' : ''
-      } hover:shadow-md transition-shadow`}
+      className={`glass-card p-5 group cursor-grab active:cursor-grabbing border border-white/5 relative overflow-hidden ${
+        isDragging || isSortableDragging ? 'opacity-30 border-primary/50 ring-2 ring-primary/20' : ''
+      }`}
     >
-      <h4 className="font-medium text-sm mb-2">{task.title}</h4>
+      {/* Priority Glow */}
+      <div className={`absolute top-0 left-0 w-1 h-full opacity-50 ${getPriorityGlow(task.priority)}`} />
 
-      <div className="flex flex-wrap gap-1 mb-2">
-        <span className={`text-xs px-2 py-0.5 rounded ${getPriorityColor(task.priority)}`}>
+      <div className="flex justify-between items-start mb-3">
+        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${getPriorityStyle(task.priority)}`}>
           {formatPriority(task.priority)}
         </span>
+        <button className="text-white/20 hover:text-white transition-colors">
+          <MoreVertical className="w-4 h-4" />
+        </button>
+      </div>
+
+      <h4 className="font-bold text-premium mb-4 group-hover:text-primary transition-colors leading-snug">
+        {task.title}
+      </h4>
+
+      <div className="flex flex-wrap gap-2 mb-5">
         {task.labels?.map((label, index) => (
           <span
             key={index}
-            className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded"
+            className="text-[10px] font-bold px-2 py-0.5 bg-primary/10 text-primary rounded-lg border border-primary/20"
           >
             {label}
           </span>
         ))}
       </div>
 
-      {task.assignedTo && (
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs">
-            {task.assignedTo.fullName?.charAt(0) || '?'}
-          </div>
-          <span className="text-xs text-gray-600">{task.assignedTo.fullName}</span>
+      <div className="flex items-center justify-between pt-4 border-t border-white/5">
+        <div className="flex items-center gap-2">
+          {task.assignedTo ? (
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500/20 to-indigo-600/20 border border-white/10 flex items-center justify-center text-[10px] font-bold text-blue-400">
+                {task.assignedTo.fullName?.charAt(0)}
+              </div>
+              <span className="text-[11px] font-bold text-white/40">{task.assignedTo.fullName.split(' ')[0]}</span>
+            </div>
+          ) : (
+             <div className="w-7 h-7 rounded-lg glass border border-dashed border-white/10 flex items-center justify-center">
+              <span className="text-[10px] text-white/20">?</span>
+            </div>
+          )}
         </div>
-      )}
 
-      {task.dueDate && (
-        <div className={`text-xs ${overdue ? 'text-red-600' : 'text-gray-500'}`}>
-          Due: {formatDate(task.dueDate)}
+        <div className="flex items-center gap-3 text-white/30">
+          {task.subtaskCount > 0 && (
+            <div className="flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-black">{task.completedSubtasks || 0}/{task.subtaskCount}</span>
+            </div>
+          )}
+          {task.dueDate && (
+            <div className={`flex items-center gap-1 ${overdue ? 'text-red-400' : ''}`}>
+              <Clock className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-black uppercase">{formatDate(task.dueDate)}</span>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Subtask progress */}
+      {/* Progress Bar for subtasks */}
       {task.subtaskCount > 0 && (
-        <div className="mt-2">
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>Subtasks</span>
-            <span>
-              {task.completedSubtasks || 0}/{task.subtaskCount}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-1">
-            <div
-              className="bg-primary h-1 rounded-full"
-              style={{
-                width: `${((task.completedSubtasks || 0) / task.subtaskCount) * 100}%`,
-              }}
-            />
-          </div>
+        <div className="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-primary" 
+            style={{ width: `${((task.completedSubtasks || 0) / task.subtaskCount) * 100}%` }} 
+          />
         </div>
       )}
     </div>
   );
+}
+
+function getPriorityStyle(priority) {
+  const styles = {
+    LOW: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    MEDIUM: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    HIGH: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    CRITICAL: 'bg-red-500/10 text-red-400 border-red-500/20',
+  };
+  return styles[priority] || styles.MEDIUM;
+}
+
+function getPriorityGlow(priority) {
+  const glows = {
+    LOW: 'bg-emerald-500 shadow-[2px_0_10px_rgba(16,185,129,0.5)]',
+    MEDIUM: 'bg-blue-500 shadow-[2px_0_10px_rgba(59,130,246,0.5)]',
+    HIGH: 'bg-orange-500 shadow-[2px_0_10px_rgba(249,115,22,0.5)]',
+    CRITICAL: 'bg-red-500 shadow-[2px_0_10px_rgba(239,68,68,0.5)]',
+  };
+  return glows[priority] || glows.MEDIUM;
 }
 
 export default KanbanCard;

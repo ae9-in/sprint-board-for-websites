@@ -1,42 +1,50 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import KanbanCard from './KanbanCard';
+import { motion } from 'framer-motion';
 
 function KanbanColumn({ id, title, tasks }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
-  const getColumnColor = (columnId) => {
-    const colors = {
-      NOT_STARTED: 'border-gray-300',
-      IN_PROGRESS: 'border-blue-300',
-      UNDER_REVIEW: 'border-yellow-300',
-      BLOCKED: 'border-red-300',
-      COMPLETED: 'border-green-300',
+  const getColumnGlow = (columnId) => {
+    const glows = {
+      NOT_STARTED: 'border-white/10',
+      IN_PROGRESS: 'border-blue-500/30',
+      UNDER_REVIEW: 'border-yellow-500/30',
+      BLOCKED: 'border-red-500/30',
+      COMPLETED: 'border-emerald-500/30',
     };
-    return colors[columnId] || 'border-gray-300';
+    return glows[columnId] || 'border-white/10';
   };
 
   return (
     <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-72 bg-white rounded-lg shadow-sm border-2 ${getColumnColor(id)} ${
-        isOver ? 'bg-gray-50' : ''
-      }`}
+      className={`flex-shrink-0 w-80 rounded-2xl glass transition-all duration-300 border ${getColumnGlow(id)} ${
+        isOver ? 'bg-white/5 ring-2 ring-primary/20' : ''
+      } flex flex-col max-h-full`}
     >
-      <div className="p-3 border-b">
+      <div className="p-5 border-b border-white/5 sticky top-0 glass z-10 rounded-t-2xl">
         <div className="flex justify-between items-center">
-          <h3 className="font-semibold text-sm">{title}</h3>
-          <span className="text-xs bg-gray-100 px-2 py-1 rounded">{tasks.length}</span>
+          <div className="flex items-center gap-3">
+            <h3 className="font-bold text-premium tracking-tight">{title}</h3>
+            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(37,99,235,0.8)]" />
+          </div>
+          <span className="text-[10px] font-black bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 text-white/40 uppercase tracking-widest">
+            {tasks.length}
+          </span>
         </div>
       </div>
 
-      <SortableContext items={tasks.map((t) => t._id)} strategy={verticalListSortingStrategy}>
-        <div className="p-2 space-y-2 min-h-[200px]">
-          {tasks.map((task) => (
-            <KanbanCard key={task._id} task={task} />
-          ))}
-        </div>
-      </SortableContext>
+      <div className="p-3 flex-1 overflow-y-auto no-scrollbar min-h-[500px]">
+        <SortableContext items={tasks.map((t) => t._id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-4">
+            {tasks.map((task) => (
+              <KanbanCard key={task._id} task={task} />
+            ))}
+          </div>
+        </SortableContext>
+      </div>
     </div>
   );
 }

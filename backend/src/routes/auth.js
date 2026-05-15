@@ -2,6 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import { Organization, User, RefreshToken, InviteToken, ActivityLog } from '../models/index.js';
+import { trackActivity } from '../utils/activity.js';
 import { hashPassword, comparePassword } from '../utils/bcrypt.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, getTokenExpiry } from '../utils/jwt.js';
 import { auth } from '../middleware/auth.js';
@@ -48,6 +49,10 @@ router.post('/signup', async (req, res, next) => {
         createdBy: null
       }], { session });
 
+      // Link owner back to organization
+      organization.ownerId = user._id;
+      await organization.save({ session });
+
       await session.commitTransaction();
       session.endSession();
 
@@ -58,19 +63,23 @@ router.post('/signup', async (req, res, next) => {
       // Store refresh token
       await RefreshToken.create({
         userId: user._id,
+        organizationId: organization._id,
         token: refreshToken,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
         expiresAt: getTokenExpiry('7d')
       });
 
       // Log activity
-      await ActivityLog.create({
+      trackActivity({
         organizationId: organization._id,
         userId: user._id,
         action: 'LOGIN',
         entityType: 'User',
         entityId: user._id,
         description: 'User signed up',
-        createdBy: user._id
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
       });
 
       res.status(201).json({
@@ -107,24 +116,23 @@ router.post('/signup', async (req, res, next) => {
 // POST /api/auth/login
 router.post('/login', async (req, res, next) => {
   try {
-    const data = validate(z.object({
-      email: z.string().email(),
-      password: z.string()
-    }), req.body);
-
-    // Find user by email - need organization context
-    // For login, we'll look for user by email and check password
-    // The frontend should send organizationId or we use email + some identifier
-    // For now, we'll accept email and find by exact match (first match)
-    // In production, you'd want to include org in the request
-
     const { email, password, organizationId } = req.body;
 
-    const query = { email: email.toLowerCase(), isDeleted: false };
-    if (organizationId) {
-      query.organizationId = organizationId;
+    if (!email || typeof email !== 'string') {
+      return res.status(422).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Email is required' }
+      });
     }
 
+    if (!password || typeof password !== 'string') {
+      return res.status(422).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Password is required' }
+      });
+    }
+
+    const query = { email: email.trim().toLowerCase(), isDeleted: false };
     const user = await User.findOne(query);
 
     if (!user || !user.isActive) {
@@ -150,15 +158,24 @@ router.post('/login', async (req, res, next) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user._id);
 
-    // Store refresh token
+    // Store refresh token with session tracking
     await RefreshToken.create({
       userId: user._id,
+      organizationId: user.organizationId,
       token: refreshToken,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
       expiresAt: getTokenExpiry('7d')
     });
 
     // Get organization
     const organization = await Organization.findById(user.organizationId);
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'ORG_NOT_FOUND', message: 'User organization not found' }
+      });
+    }
 
     // Log activity
     await ActivityLog.create({
@@ -195,9 +212,12 @@ router.post('/login', async (req, res, next) => {
       message: 'Login successful'
     });
   } catch (error) {
+    console.error('[Login Error]:', error); // Added detailed logging
     next(error);
   }
 });
+
+
 
 // POST /api/auth/refresh
 router.post('/refresh', async (req, res, next) => {
@@ -234,7 +254,10 @@ router.post('/refresh', async (req, res, next) => {
     const newRefreshToken = generateRefreshToken(user._id);
     await RefreshToken.create({
       userId: user._id,
+      organizationId: user.organizationId,
       token: newRefreshToken,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
       expiresAt: getTokenExpiry('7d')
     });
 
@@ -528,6 +551,54 @@ router.get('/me', auth, async (req, res, next) => {
           plan: organization.plan
         }
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/auth/sessions - List active sessions
+router.get('/sessions', auth, async (req, res, next) => {
+  try {
+    const sessions = await RefreshToken.find({
+      userId: req.user.id,
+      isValid: true,
+      expiresAt: { $gt: new Date() }
+    }).sort({ lastUsedAt: -1 }).lean();
+
+    res.json({
+      success: true,
+      data: sessions.map(s => ({
+        id: s._id,
+        ipAddress: s.ipAddress,
+        userAgent: s.userAgent,
+        lastUsedAt: s.lastUsedAt,
+        isCurrent: s.token === req.body.refreshToken // Optional: identifying current session
+      }))
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/auth/sessions/:id - Revoke session
+router.delete('/sessions/:id', auth, async (req, res, next) => {
+  try {
+    const result = await RefreshToken.deleteOne({
+      _id: req.params.id,
+      userId: req.user.id
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Session not found' }
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Session revoked successfully'
     });
   } catch (error) {
     next(error);

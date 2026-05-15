@@ -1,12 +1,13 @@
 import express from 'express';
 import { z } from 'zod';
 import { Task, TaskComment, Project, Sprint } from '../models/index.js';
+import { trackActivity } from '../utils/activity.js';
 import { auth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/rbac.js';
 import { orgQuery, assertObjectId } from '../middleware/orgScope.js';
 import { validate } from '../utils/validators.js';
 import { paginate, buildPaginationMeta } from '../utils/pagination.js';
-import { broadcastToOrganization } from '../utils/sseManager.js';
+import { emitToProject, emitToOrg } from '../utils/socket.js';
 
 const router = express.Router();
 
@@ -83,12 +84,21 @@ router.post('/projects/:projectId/tasks', auth, async (req, res, next) => {
       $inc: { 'metrics.totalTasks': 1 }
     });
 
-    // Broadcast update
-    broadcastToOrganization(req.user.organizationId, 'TASK_CREATED', {
+    // Log activity
+    trackActivity({
+      organizationId: req.user.organizationId,
+      projectId: req.params.projectId,
+      userId: req.user.id,
+      action: 'TASK_CREATED',
       entityType: 'Task',
       entityId: task._id,
-      data: task
+      description: `Task "${task.title}" created`,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
     });
+
+    // Socket emission
+    emitToProject(req.params.projectId, 'task-created', task);
 
     res.status(201).json({
       success: true,
@@ -131,6 +141,9 @@ router.patch('/projects/:projectId/tasks/:id', auth, async (req, res, next) => {
         error: { code: 'NOT_FOUND', message: 'Task not found' }
       });
     }
+
+    // Socket emission
+    emitToProject(req.params.projectId, 'task-updated', task);
 
     res.json({
       success: true,
@@ -187,6 +200,9 @@ router.patch('/projects/:projectId/tasks/:id/status', auth, async (req, res, nex
       });
     }
 
+    // Socket emission
+    emitToProject(req.params.projectId, 'task-updated', task);
+
     res.json({
       success: true,
       data: task,
@@ -214,6 +230,9 @@ router.delete('/projects/:projectId/tasks/:id', auth, async (req, res, next) => 
         error: { code: 'NOT_FOUND', message: 'Task not found' }
       });
     }
+
+    // Socket emission
+    emitToProject(req.params.projectId, 'task-deleted', task._id);
 
     res.json({
       success: true,

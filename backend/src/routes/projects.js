@@ -2,12 +2,14 @@ import express from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import { Project, ProjectStage, User, Notification, ActivityLog, Sprint, Task } from '../models/index.js';
+import { trackActivity } from '../utils/activity.js';
 import { auth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/rbac.js';
 import { orgQuery, assertObjectId } from '../middleware/orgScope.js';
 import { validate } from '../utils/validators.js';
 import { paginate, buildPaginationMeta } from '../utils/pagination.js';
-import { push } from '../utils/sseManager.js';
+import { getIO } from '../utils/socket.js';
+import { addNotificationJob } from '../queues/notificationQueue.js';
 
 const router = express.Router();
 
@@ -29,9 +31,10 @@ router.get('/', auth, async (req, res, next) => {
 
     const query = orgQuery(req);
 
-    // Role-based filtering
-    if (req.user.role !== 'SUPER_ADMIN' && assignedTo) {
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(req.user.role)) {
       query.assignedUserIds = req.user.id;
+    } else if (assignedTo) {
+      query.assignedUserIds = assignedTo;
     }
 
     // Search
@@ -70,6 +73,11 @@ router.get('/:id', auth, async (req, res, next) => {
     assertObjectId(req.params.id, 'Project ID');
 
     const query = orgQuery(req, { _id: req.params.id });
+    
+    // Role-based access control
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(req.user.role)) {
+      query.assignedUserIds = req.user.id;
+    }
 
     const project = await Project.findOne(query)
       .populate('assignedUserIds', 'fullName email userType')
@@ -156,31 +164,23 @@ router.post('/', auth, requireRole(['SUPER_ADMIN']), async (req, res, next) => {
       await session.commitTransaction();
       session.endSession();
 
-      // Send notifications to assigned users
+      // Offload notifications to background queue
       if (data.assignedUserIds && data.assignedUserIds.length > 0) {
         for (const userId of data.assignedUserIds) {
-          const notification = await Notification.create({
+          addNotificationJob({
             organizationId: req.user.organizationId,
             userId,
             projectId: project._id,
             type: 'PROJECT_ASSIGNED',
             title: 'New Project Assigned',
             message: `You have been assigned to project: ${project.name}`,
-            link: `/projects/${project._id}`,
-            createdBy: req.user.id
+            link: `/projects/${project._id}`
           });
-
-          // Push real-time notification
-          try {
-            push(userId.toString(), notification);
-          } catch (e) {
-            // Ignore SSE errors
-          }
         }
       }
 
       // Log activity
-      await ActivityLog.create({
+      trackActivity({
         organizationId: req.user.organizationId,
         projectId: project._id,
         userId: req.user.id,
@@ -188,7 +188,8 @@ router.post('/', auth, requireRole(['SUPER_ADMIN']), async (req, res, next) => {
         entityType: 'Project',
         entityId: project._id,
         description: `Project "${project.name}" created`,
-        createdBy: req.user.id
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
       });
 
       // Fetch created project with stages
@@ -254,7 +255,7 @@ router.patch('/:id', auth, async (req, res, next) => {
     }
 
     // Log activity
-    await ActivityLog.create({
+    trackActivity({
       organizationId: req.user.organizationId,
       projectId: project._id,
       userId: req.user.id,
@@ -262,8 +263,12 @@ router.patch('/:id', auth, async (req, res, next) => {
       entityType: 'Project',
       entityId: project._id,
       description: `Project "${project.name}" updated`,
-      createdBy: req.user.id
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
     });
+
+    // Real-time update
+    getIO().to(`project:${project._id}`).emit('project-updated', project);
 
     res.json({
       success: true,
@@ -346,7 +351,7 @@ router.delete('/:id', auth, async (req, res, next) => {
     }
 
     // Log activity
-    await ActivityLog.create({
+    trackActivity({
       organizationId: req.user.organizationId,
       projectId: project._id,
       userId: req.user.id,
@@ -354,7 +359,8 @@ router.delete('/:id', auth, async (req, res, next) => {
       entityType: 'Project',
       entityId: project._id,
       description: `Project "${project.name}" deleted`,
-      createdBy: req.user.id
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
     });
 
     res.json({
@@ -415,82 +421,90 @@ router.post('/:projectId/stages/:stageType/approve', auth, async (req, res, next
       }
     }
 
-    // Update current stage
-    const stage = await ProjectStage.findOneAndUpdate(
-      { projectId: project._id, stageType, isDeleted: false },
-      {
-        $set: {
-          status: 'APPROVED',
-          approvedBy: req.user.id,
-          approvalNotes: approvalNotes || null,
-          completedAt: new Date()
-        }
-      },
-      { new: true }
-    );
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    // Advance to next stage if exists
-    const nextStageIndex = currentStageIndex + 1;
-    if (nextStageIndex < STAGE_ORDER.length) {
-      const nextStage = await ProjectStage.findOneAndUpdate(
-        { projectId: project._id, stageType: STAGE_ORDER[nextStageIndex], isDeleted: false },
+    try {
+      // Update current stage
+      const stage = await ProjectStage.findOneAndUpdate(
+        { projectId: project._id, stageType, isDeleted: false },
         {
           $set: {
-            status: 'IN_PROGRESS',
-            startedAt: new Date()
+            status: 'APPROVED',
+            approvedBy: req.user.id,
+            approvalNotes: approvalNotes || null,
+            completedAt: new Date()
           }
         },
-        { new: true }
+        { new: true, session }
       );
 
-      // Update project current stage and progress
-      project.currentStage = STAGE_ORDER[nextStageIndex];
-      project.progressPercent = Math.round(((currentStageIndex + 1) / STAGE_ORDER.length) * 100);
-      await project.save();
-    } else {
-      // If it was the last stage, set to 100%
-      project.progressPercent = 100;
-      project.status = 'COMPLETED';
-      await project.save();
-    }
+      // Advance to next stage if exists
+      const currentStageIndex = STAGE_ORDER.indexOf(stageType);
+      const nextStageIndex = currentStageIndex + 1;
 
-    // Send notifications to assigned users
-    const notifications = [];
-    for (const userId of project.assignedUserIds) {
-      const notification = await Notification.create({
+      if (nextStageIndex < STAGE_ORDER.length) {
+        await ProjectStage.findOneAndUpdate(
+          { projectId: project._id, stageType: STAGE_ORDER[nextStageIndex], isDeleted: false },
+          {
+            $set: {
+              status: 'IN_PROGRESS',
+              startedAt: new Date()
+            }
+          },
+          { session }
+        );
+
+        project.currentStage = STAGE_ORDER[nextStageIndex];
+        project.progressPercent = Math.round(((currentStageIndex + 1) / STAGE_ORDER.length) * 100);
+      } else {
+        project.progressPercent = 100;
+        project.status = 'COMPLETED';
+      }
+
+      await project.save({ session });
+
+      trackActivity({
         organizationId: req.user.organizationId,
-        userId,
         projectId: project._id,
-        type: 'APPROVED',
-        title: 'Stage Approved',
-        message: `Stage "${stageType}" has been approved for project "${project.name}"`,
-        link: `/projects/${project._id}`,
-        createdBy: req.user.id
+        userId: req.user.id,
+        action: 'STAGE_APPROVED',
+        entityType: 'ProjectStage',
+        entityId: stage._id,
+        description: `Stage "${stageType}" approved`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
       });
-      notifications.push(notification);
 
-      try {
-        push(userId.toString(), notification);
-      } catch (e) {}
+      await session.commitTransaction();
+      session.endSession();
+
+      // Background notifications
+      for (const userId of project.assignedUserIds) {
+        addNotificationJob({
+          organizationId: req.user.organizationId,
+          userId,
+          projectId: project._id,
+          type: 'APPROVED',
+          title: 'Stage Approved',
+          message: `Stage "${stageType}" has been approved for project "${project.name}"`,
+          link: `/projects/${project._id}`
+        });
+      }
+
+      // Real-time update to all project members
+      getIO().to(`project:${project._id}`).emit('project-updated', project);
+
+      res.json({
+        success: true,
+        data: { stage, project },
+        message: 'Stage approved successfully'
+      });
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      throw err;
     }
-
-    // Log activity
-    await ActivityLog.create({
-      organizationId: req.user.organizationId,
-      projectId: project._id,
-      userId: req.user.id,
-      action: 'STAGE_APPROVED',
-      entityType: 'ProjectStage',
-      entityId: stage._id,
-      description: `Stage "${stageType}" approved`,
-      createdBy: req.user.id
-    });
-
-    res.json({
-      success: true,
-      data: { stage, project },
-      message: 'Stage approved successfully'
-    });
   } catch (error) {
     next(error);
   }
@@ -549,7 +563,7 @@ router.post('/:projectId/stages/:stageType/reject', auth, async (req, res, next)
     }
 
     // Log activity
-    await ActivityLog.create({
+    trackActivity({
       organizationId: req.user.organizationId,
       projectId: project._id,
       userId: req.user.id,
@@ -557,8 +571,12 @@ router.post('/:projectId/stages/:stageType/reject', auth, async (req, res, next)
       entityType: 'ProjectStage',
       entityId: stage._id,
       description: `Stage "${stageType}" rejected`,
-      createdBy: req.user.id
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
     });
+
+    // Real-time update
+    getIO().to(`project:${project._id}`).emit('project-updated', project);
 
     res.json({
       success: true,

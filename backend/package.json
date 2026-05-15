@@ -6,27 +6,42 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "cross-env JWT_ACCESS_SECRET=test-access-123 JWT_REFRESH_SECRET=test-refresh-123 NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
+
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.650.0",
-    "@aws-sdk/s3-request-presigner": "^3.650.0",
+    "@aws-sdk/client-s3": "^3.1047.0",
+    "@aws-sdk/s3-request-presigner": "^3.1047.0",
     "@prisma/client": "^7.8.0",
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.12.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "express-rate-limit": "^7.4.0",
+    "express-winston": "^4.2.0",
     "helmet": "^7.1.0",
-    "ioredis": "^5.4.1",
+    "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.2.0",
     "mongoose": "^8.8.0",
+    "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.15",
     "prisma": "^7.8.0",
+    "rate-limit-redis": "^5.0.0",
+    "socket.io": "^4.8.3",
     "uuid": "^10.0.0",
+    "winston": "^3.19.0",
     "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "ioredis-mock": "^8.13.1",
+    "jest": "^30.4.2",
+    "mongodb-memory-server": "^11.1.0",
+    "supertest": "^7.2.2"
   }
 }

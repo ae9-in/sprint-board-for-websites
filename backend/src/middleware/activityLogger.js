@@ -1,4 +1,4 @@
-import { ActivityLog } from '../models/index.js';
+import { trackActivity } from '../utils/activity.js';
 
 export function logActivity(action, entityType) {
   return async (req, res, next) => {
@@ -15,7 +15,7 @@ export function logActivity(action, entityType) {
           // Skip logging for certain endpoints
           if (req.path.includes('/stream')) return;
 
-          ActivityLog.create({
+          trackActivity({
             organizationId: req.user.organizationId,
             projectId: req.body.projectId || req.params.projectId || null,
             userId: req.user.id,
@@ -24,9 +24,8 @@ export function logActivity(action, entityType) {
             entityId: req.params.id || parsed.data?._id || null,
             description: `${action} on ${entityType}`,
             ipAddress: req.ip,
-            userAgent: req.headers['user-agent'],
-            createdBy: req.user.id
-          }).catch(console.error);
+            userAgent: req.headers['user-agent']
+          });
         } catch (e) {
           // Silently fail activity logging
         }

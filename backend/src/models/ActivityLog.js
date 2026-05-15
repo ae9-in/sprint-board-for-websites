@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import basePlugin from './plugins/basePlugin.js';
 
 const activityLogSchema = new mongoose.Schema({
   organizationId: {
@@ -56,20 +57,18 @@ const activityLogSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  isDeleted: {
-    type: Boolean,
-    default: false,
-    index: true
+  expireAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days TTL
+    index: { expires: 0 }
   }
 }, {
   timestamps: true
 });
 
+activityLogSchema.plugin(basePlugin);
+
+// Enterprise Audit Indexes
 activityLogSchema.index({ organizationId: 1, createdAt: -1 });
 activityLogSchema.index({ projectId: 1, createdAt: -1 });
 activityLogSchema.index({ userId: 1, createdAt: -1 });

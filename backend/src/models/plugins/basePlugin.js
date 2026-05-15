@@ -1,72 +1,65 @@
 import mongoose from 'mongoose';
 
 export default function basePlugin(schema, options) {
-  // Add organizationId field
-  schema.add({
-    organizationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Organization',
-      required: true,
-      index: true
-    }
-  });
+  // Add organizationId field if not already present
+  if (!schema.path('organizationId')) {
+    schema.add({
+      organizationId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Organization',
+        required: true,
+        index: true
+      }
+    });
+  }
 
-  // Add createdBy field
-  schema.add({
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: false,
-      default: null
-    }
-  });
+  // Add createdBy field if not already present
+  if (!schema.path('createdBy')) {
+    schema.add({
+      createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false,
+        default: null,
+        index: true
+      }
+    });
+  }
 
-  // Add createdAt
-  schema.add({
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  });
+  // Standardize soft delete
+  if (!schema.path('isDeleted')) {
+    schema.add({
+      isDeleted: {
+        type: Boolean,
+        default: false,
+        index: true
+      }
+    });
+  }
 
-  // Add updatedAt
-  schema.add({
-    updatedAt: {
-      type: Date,
-      default: Date.now
-    }
-  });
-
-  // Add isDeleted with index
-  schema.add({
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true
-    }
-  });
-
-  // Pre save hook to update updatedAt
-  schema.pre('save', function(next) {
-    this.updatedAt = new Date();
-    next();
-  });
-
-  // Pre findOneAndUpdate hook
-  schema.pre('findOneAndUpdate', function(next) {
-    this.set({ updatedAt: new Date() });
-    next();
-  });
+  // Ensure compound index for multi-tenant isolation
+  // This ensures every query by organizationId + isDeleted is fast
+  schema.index({ organizationId: 1, isDeleted: 1 });
 
   // Method to soft delete
-  schema.methods.softDelete = function() {
+  schema.methods.softDelete = function(userId) {
     this.isDeleted = true;
-    this.updatedAt = new Date();
+    if (userId) this.updatedBy = userId;
     return this.save();
   };
 
-  // Static method to find non-deleted
-  schema.statics.findActive = function(conditions = {}) {
-    return this.find({ ...conditions, isDeleted: false });
+  // Query helpers for active documents
+  schema.query.active = function() {
+    return this.where({ isDeleted: false });
   };
+
+  // Query helper for tenant isolation
+  schema.query.byOrg = function(orgId) {
+    return this.where({ organizationId: orgId });
+  };
+
+  // Ensure timestamps are enabled if not explicitly disabled
+  if (!schema.options.timestamps) {
+    schema.set('timestamps', true);
+  }
 }

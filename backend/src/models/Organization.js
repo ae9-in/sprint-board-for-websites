@@ -13,30 +13,52 @@ const organizationSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false,
+    index: true
+  },
   ownerEmail: {
     type: String,
     required: true,
     lowercase: true
   },
-  plan: {
-    type: String,
-    enum: ['FREE', 'PRO', 'ENTERPRISE'],
-    default: 'FREE'
+  subscription: {
+    plan: {
+      type: String,
+      enum: ['FREE', 'PRO', 'ENTERPRISE'],
+      default: 'FREE'
+    },
+    status: {
+      type: String,
+      enum: ['ACTIVE', 'PAST_DUE', 'CANCELLED', 'TRIALING'],
+      default: 'ACTIVE'
+    },
+    currentPeriodEnd: Date,
+    customerId: String
+  },
+  usage: {
+    totalProjects: { type: Number, default: 0 },
+    totalUsers: { type: Number, default: 0 },
+    storageUsed: { type: Number, default: 0 } // in bytes
   },
   isActive: {
     type: Boolean,
-    default: true
+    default: true,
+    index: true
   },
   settings: {
     timezone: { type: String, default: 'UTC' },
-    dailyLogReminderTime: { type: String, default: '18:00' }
+    dailyLogReminderTime: { type: String, default: '18:00' },
+    allowedDomains: [String]
   }
 }, {
-  timestamps: true,
-  indexes: [
-    { ownerEmail: 1 }
-  ]
+  timestamps: true
 });
+
+organizationSchema.index({ 'subscription.plan': 1 });
+
 
 // Generate slug from name
 organizationSchema.statics.generateSlug = async function(name) {

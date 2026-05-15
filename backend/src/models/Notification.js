@@ -45,10 +45,10 @@ const notificationSchema = new mongoose.Schema({
     default: false,
     index: true
   },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
+  expireAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days TTL
+    index: { expires: 0 }
   }
 }, {
   timestamps: true
@@ -56,8 +56,9 @@ const notificationSchema = new mongoose.Schema({
 
 notificationSchema.plugin(basePlugin);
 
+// Enterprise Performance Indexes
 notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
-notificationSchema.index({ organizationId: 1, userId: 1, isDeleted: 1 });
+notificationSchema.index({ organizationId: 1, userId: 1, isRead: 1 });
 
 export const Notification = mongoose.model('Notification', notificationSchema);
 export default Notification;

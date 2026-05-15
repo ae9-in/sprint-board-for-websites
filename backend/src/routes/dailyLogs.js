@@ -1,6 +1,8 @@
 import express from 'express';
 import { z } from 'zod';
 import { DailyLog, Project } from '../models/index.js';
+import { trackActivity } from '../utils/activity.js';
+import { emitToProject } from '../utils/socket.js';
 import { auth } from '../middleware/auth.js';
 import { orgQuery, assertObjectId } from '../middleware/orgScope.js';
 import { validate } from '../utils/validators.js';
@@ -84,6 +86,22 @@ router.post('/projects/:projectId/daily-logs', auth, async (req, res, next) => {
       date: new Date(data.date),
       createdBy: req.user.id
     });
+
+    // Log activity
+    trackActivity({
+      organizationId: req.user.organizationId,
+      projectId: req.params.projectId,
+      userId: req.user.id,
+      action: 'LOG_CREATED',
+      entityType: 'DailyLog',
+      entityId: log._id,
+      description: `Daily log submitted for ${new Date(data.date).toLocaleDateString()}`,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
+    // Socket emission
+    emitToProject(req.params.projectId, 'log-created', log);
 
     res.status(201).json({
       success: true,

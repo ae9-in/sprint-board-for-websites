@@ -11,6 +11,7 @@ import dailyLogRoutes from './routes/dailyLogs.js';
 import dashboardRoutes from './routes/dashboard.js';
 import notificationRoutes from './routes/notifications.js';
 import sseRoutes from './routes/sse.js';
+import searchRoutes from './routes/search.js';
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api', dailyLogRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/notifications/stream', sseRoutes);
+app.use('/api/search', searchRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

@@ -38,7 +38,8 @@ const taskSchema = new mongoose.Schema({
   priority: {
     type: String,
     enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-    default: 'MEDIUM'
+    default: 'MEDIUM',
+    index: true
   },
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
@@ -48,7 +49,8 @@ const taskSchema = new mongoose.Schema({
   },
   dueDate: {
     type: Date,
-    default: null
+    default: null,
+    index: true
   },
   estimatedHours: {
     type: Number,
@@ -67,7 +69,8 @@ const taskSchema = new mongoose.Schema({
   parentTaskId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Task',
-    default: null
+    default: null,
+    index: true
   },
   dependsOnTaskId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -81,23 +84,22 @@ const taskSchema = new mongoose.Schema({
   commitLinks: [{
     type: String,
     trim: true
-  }],
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  }
+  }]
 }, {
   timestamps: true
 });
 
 taskSchema.plugin(basePlugin);
 
-taskSchema.index({ projectId: 1, status: 1 });
-taskSchema.index({ projectId: 1, sprintId: 1, status: 1 });
+// Enterprise Compound Indexes
+taskSchema.index({ organizationId: 1, sprintId: 1, status: 1 });
+taskSchema.index({ organizationId: 1, status: 1 });
 taskSchema.index({ organizationId: 1, assignedTo: 1, status: 1 });
-taskSchema.index({ parentTaskId: 1 });
+taskSchema.index({ organizationId: 1, priority: 1 });
+taskSchema.index({ organizationId: 1, dueDate: 1 });
+taskSchema.index({ projectId: 1, status: 1 });
 taskSchema.index({ projectId: 1, title: 'text', description: 'text' });
+
 
 export const Task = mongoose.model('Task', taskSchema);
 export default Task;

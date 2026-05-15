@@ -12,22 +12,37 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  arrayMove,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import api from '../services/api';
+import { useSocket } from '../contexts/SocketContext';
 import KanbanColumn from '../components/KanbanColumn';
 import KanbanCard from '../components/KanbanCard';
+import DashboardLayout from '../layouts/DashboardLayout';
+import { 
+  Plus, 
+  ChevronLeft, 
+  Filter, 
+  Settings2,
+  Rocket,
+  Search,
+  Layout
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function SprintBoard() {
   const { id: projectId } = useParams();
   const queryClient = useQueryClient();
-  const [tasks, setTasks] = useState([]);
+  const socket = useSocket();
   const [activeId, setActiveId] = useState(null);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'MEDIUM' });
 
-  const { data: tasksData, isLoading } = useQuery({
+  // Core Data Fetching
+  const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks', projectId],
     queryFn: async () => {
       const response = await api.get(`/projects/${projectId}/tasks`);
@@ -35,46 +50,53 @@ function SprintBoard() {
     },
   });
 
+  // Real-time Synchronization
   useEffect(() => {
-    if (tasksData) {
-      setTasks(tasksData);
-    }
-  }, [tasksData]);
+    if (socket && projectId) {
+      socket.emit('join-project', projectId);
 
+      socket.on('task-updated', (updatedTask) => {
+        queryClient.setQueryData(['tasks', projectId], (old) => 
+          old?.map(t => t._id === updatedTask._id ? updatedTask : t)
+        );
+      });
+
+      socket.on('task-created', (newTask) => {
+        queryClient.setQueryData(['tasks', projectId], (old) => [newTask, ...(old || [])]);
+      });
+
+      return () => {
+        socket.off('task-updated');
+        socket.off('task-created');
+      };
+    }
+  }, [socket, projectId, queryClient]);
+
+  // Status Update Mutation
   const updateStatusMutation = useMutation({
     mutationFn: ({ taskId, status }) =>
       api.patch(`/projects/${projectId}/tasks/${taskId}/status`, { status }),
     onMutate: async ({ taskId, status }) => {
       await queryClient.cancelQueries(['tasks', projectId]);
       const previousTasks = queryClient.getQueryData(['tasks', projectId]);
-
-      setTasks((prev) =>
-        prev.map((task) =>
-          task._id === taskId ? { ...task, status } : task
-        )
+      queryClient.setQueryData(['tasks', projectId], (old) =>
+        old.map((task) => task._id === taskId ? { ...task, status } : task)
       );
-
       return { previousTasks };
     },
-    onError: (err, { taskId }, context) => {
-      setTasks(context.previousTasks);
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(['tasks', projectId], context.previousTasks);
+      toast.error('Failed to update task status');
     },
-    onSettled: () => {
-      queryClient.invalidateQueries(['tasks', projectId]);
+    onSuccess: () => {
+      toast.success('Task status updated');
     },
   });
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const columns = [
@@ -85,176 +107,212 @@ function SprintBoard() {
     { id: 'COMPLETED', title: 'Completed' },
   ];
 
-  const getTasksByStatus = (status) => {
-    return tasks.filter((task) => task.status === status);
-  };
-
-  const handleDragStart = (event) => {
-    setActiveId(event.active.id);
-  };
-
-  const handleDragOver = (event) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const activeTask = tasks.find((t) => t._id === active.id);
-    const overColumn = columns.find((c) => c.id === over.id);
-
-    if (overColumn && activeTask.status !== overColumn.id) {
-      setTasks((prev) =>
-        prev.map((task) =>
-          task._id === active.id ? { ...task, status: overColumn.id } : task
-        )
-      );
-    }
-  };
+  const handleDragStart = (event) => setActiveId(event.active.id);
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
     setActiveId(null);
-
     if (!over) return;
 
     const activeTask = tasks.find((t) => t._id === active.id);
-    const overColumn = columns.find((c) => c.id === over.id);
-
-    if (overColumn && activeTask) {
-      updateStatusMutation.mutate({
-        taskId: active.id,
-        status: overColumn.id,
-      });
+    const overId = over.id;
+    const overColumn = columns.find(c => c.id === overId);
+    
+    if (overColumn && activeTask.status !== overColumn.id) {
+      updateStatusMutation.mutate({ taskId: active.id, status: overColumn.id });
     }
   };
 
   const activeTask = activeId ? tasks.find((t) => t._id === activeId) : null;
-
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', description: '' });
 
   const createTaskMutation = useMutation({
     mutationFn: (task) => api.post(`/projects/${projectId}/tasks`, task),
     onSuccess: () => {
       queryClient.invalidateQueries(['tasks', projectId]);
       setShowAddTask(false);
-      setNewTask({ title: '', description: '' });
+      setNewTask({ title: '', description: '', priority: 'MEDIUM' });
+      toast.success('Task created successfully');
     },
-    onError: (err) => {
-      alert(err.response?.data?.error?.message || 'Failed to create task');
-    }
   });
 
-  const handleCreateTask = (e) => {
-    e.preventDefault();
-    createTaskMutation.mutate(newTask);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
+  if (isLoading) return <BoardSkeleton />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+    <DashboardLayout>
+      <div className="flex flex-col h-full space-y-6">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-transparent mb-4">
           <div className="flex items-center gap-4">
-            <Link to={`/projects/${projectId}`} className="text-gray-600 hover:text-gray-900">
-              ← Project
+            <Link to={`/projects/${projectId}`} className="p-2.5 glass rounded-xl hover:bg-white/10 transition-all text-white/50 hover:text-white">
+              <ChevronLeft className="w-5 h-5" />
             </Link>
-            <h1 className="text-xl font-bold">Sprint Board</h1>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Rocket className="w-4 h-4 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Sprint Board</span>
+              </div>
+              <h1 className="text-3xl font-black text-premium tracking-tight">Active Sprint #24</h1>
+            </div>
           </div>
-          <button
-            onClick={() => setShowAddTask(true)}
-            className="w-full md:w-auto px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 text-sm font-medium transition-colors"
-          >
-            + Add Task
-          </button>
-        </div>
-      </header>
 
-      {/* Kanban Board */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex gap-4 overflow-x-auto pb-4">
-            {columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                id={column.id}
-                title={column.title}
-                tasks={getTasksByStatus(column.id)}
-              />
-            ))}
+          <div className="flex items-center gap-3">
+            <div className="flex -space-x-2 mr-4 hidden sm:flex">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="w-9 h-9 rounded-xl border-2 border-[#0F172A] bg-gray-800 flex items-center justify-center text-xs font-bold shadow-xl">
+                  {String.fromCharCode(64+i)}
+                </div>
+              ))}
+            </div>
+            <button className="glass p-3 rounded-xl hover:bg-white/10 transition-all text-white/40 hover:text-white">
+              <Filter className="w-5 h-5" />
+            </button>
+            <button className="glass p-3 rounded-xl hover:bg-white/10 transition-all text-white/40 hover:text-white">
+              <Settings2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setShowAddTask(true)}
+              className="btn-primary-premium flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" /> Add Task
+            </button>
           </div>
+        </header>
+
+        {/* Board Content */}
+        <div className="flex-1 min-h-0">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex gap-6 overflow-x-auto pb-10 h-full no-scrollbar">
+              {columns.map((column) => (
+                <KanbanColumn
+                  key={column.id}
+                  id={column.id}
+                  title={column.title}
+                  tasks={tasks.filter(t => t.status === column.id)}
+                />
+              ))}
+            </div>
 
             <DragOverlay>
-              {activeTask ? (
-                <KanbanCard task={activeTask} isDragging />
-              ) : null}
+              {activeTask ? <KanbanCard task={activeTask} isDragging /> : null}
             </DragOverlay>
           </DndContext>
-        </main>
+        </div>
+      </div>
 
-        {/* Add Task Modal */}
+      {/* Add Task Modal */}
+      <AnimatePresence>
         {showAddTask && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-bold mb-4">Add New Task</h3>
-              <form onSubmit={handleCreateTask}>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Title</label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full p-2 border rounded"
-                      value={newTask.title}
-                      onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    />
+          <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-card w-full max-w-xl overflow-hidden shadow-[0_0_100px_rgba(37,99,235,0.1)] border border-white/10"
+            >
+              <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-black text-premium">Create New Task</h3>
+                  <p className="text-white/40 text-sm font-medium">Initialize a new work item in the backlog</p>
+                </div>
+                <button onClick={() => setShowAddTask(false)} className="p-2 glass rounded-lg hover:bg-white/10 text-white/20 hover:text-white transition-all">
+                  <Plus className="w-6 h-6 rotate-45" />
+                </button>
+              </div>
+              
+              <form onSubmit={(e) => { e.preventDefault(); createTaskMutation.mutate(newTask); }} className="p-8">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Task Title</label>
+                    <div className="relative group">
+                      <Layout className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-primary transition-colors" />
+                      <input
+                        autoFocus
+                        type="text"
+                        required
+                        placeholder="e.g., Redesign landing page hero"
+                        className="glass-input w-full pl-12 h-14 text-lg"
+                        value={newTask.title}
+                        onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Description</label>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Description</label>
                     <textarea
-                      className="w-full p-2 border rounded"
-                      rows="3"
+                      placeholder="Provide detailed context for this task..."
+                      className="glass-input w-full min-h-[120px] py-4 text-base resize-none"
                       value={newTask.description}
                       onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                     />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Priority</label>
+                      <select
+                        className="glass-input w-full h-12 text-sm font-bold appearance-none bg-no-repeat bg-[right_1rem_center]"
+                        value={newTask.priority}
+                        onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                      >
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="CRITICAL">Critical</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Estimate</label>
+                      <input type="text" placeholder="e.g., 4h" className="glass-input w-full h-12 text-sm font-bold" />
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-6 flex justify-end gap-3">
+
+                <div className="mt-10 flex gap-4">
                   <button
                     type="button"
                     onClick={() => setShowAddTask(false)}
-                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-                    disabled={createTaskMutation.isPending}
+                    className="flex-1 h-14 rounded-xl font-bold text-white/50 hover:bg-white/5 transition-all"
                   >
-                    Cancel
+                    Discard
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
                     disabled={createTaskMutation.isPending}
+                    className="flex-[2] h-14 btn-primary-premium flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {createTaskMutation.isPending ? 'Adding...' : 'Add Task'}
+                    {createTaskMutation.isPending ? 'Processing...' : (
+                      <>
+                        Create Task <Plus className="w-5 h-5" />
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
-            </div>
+            </motion.div>
           </div>
         )}
+      </AnimatePresence>
+    </DashboardLayout>
+  );
+}
+
+function BoardSkeleton() {
+  return (
+    <DashboardLayout>
+      <div className="space-y-8 animate-pulse h-full flex flex-col">
+        <div className="h-20 bg-white/5 rounded-2xl"></div>
+        <div className="flex-1 flex gap-6 overflow-hidden">
+          {[1,2,3,4].map(i => <div key={i} className="w-80 bg-white/5 rounded-2xl shrink-0"></div>)}
+        </div>
       </div>
-    );
-  }
+    </DashboardLayout>
+  );
+}
 
 export default SprintBoard;

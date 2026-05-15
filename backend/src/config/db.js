@@ -18,12 +18,11 @@ export async function connectDB() {
   mongoose.set('bufferCommands', false);
 
   await mongoose.connect(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     maxPoolSize: 10,
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000
   });
+
 }
 
 export default mongoose;
