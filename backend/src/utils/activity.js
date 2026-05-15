@@ -1,9 +1,8 @@
 import { ActivityLog } from '../models/index.js';
-import { emitToOrg } from './socket.js';
 
 /**
- * Logs an activity to the database and emits a real-time event to the organization room.
- * @param {Object} params - Activity parameters
+ * Logs an activity to the database and optionally emits a real-time event.
+ * Safe to call in serverless contexts — socket emit is attempted lazily.
  */
 export async function trackActivity({
   organizationId,
@@ -30,12 +29,17 @@ export async function trackActivity({
       createdBy: userId
     });
 
-    // Emit to real-time sync channel
-    emitToOrg(organizationId, 'activity-created', log);
+    // Emit to real-time sync channel (non-blocking, optional)
+    try {
+      const { emitToOrg } = await import('./socket.js');
+      emitToOrg(organizationId, 'activity-created', log);
+    } catch (_) {
+      // Socket not initialized in this context — skip
+    }
 
     return log;
   } catch (error) {
-    console.error('Failed to log/emit activity:', error);
-    // Non-blocking, so we don't throw
+    console.error('Failed to log activity:', error.message);
+    // Non-blocking — never throw from activity logger
   }
 }
