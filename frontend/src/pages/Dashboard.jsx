@@ -112,7 +112,7 @@ function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               className="text-4xl font-black text-premium mb-4"
             >
-              Welcome back, {user?.fullName.split(' ')[0]}!
+              Welcome back, {user?.fullName?.split(' ')[0] || 'Admin'}!
             </motion.h2>
             <p className="text-white/50 text-lg font-medium leading-relaxed mb-8">
               You're currently leading <span className="text-primary font-bold">{organization?.name}</span>. 

@@ -76,7 +76,7 @@ function KanbanCard({ task, isDragging = false }) {
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500/20 to-indigo-600/20 border border-white/10 flex items-center justify-center text-[10px] font-bold text-blue-400">
                 {task.assignedTo.fullName?.charAt(0)}
               </div>
-              <span className="text-[11px] font-bold text-white/40">{task.assignedTo.fullName.split(' ')[0]}</span>
+              <span className="text-[11px] font-bold text-white/40">{task.assignedTo?.fullName?.split(' ')[0] || 'Unassigned'}</span>
             </div>
           ) : (
              <div className="w-7 h-7 rounded-lg glass border border-dashed border-white/10 flex items-center justify-center">
