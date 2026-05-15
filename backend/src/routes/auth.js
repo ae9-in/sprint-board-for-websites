@@ -135,7 +135,16 @@ router.post('/login', async (req, res, next) => {
     const query = { email: email.trim().toLowerCase(), isDeleted: false };
     const user = await User.findOne(query);
 
-    if (!user || !user.isActive) {
+    if (!user) {
+      console.log(`[Login] User not found: ${query.email}`);
+      return res.status(401).json({
+        success: false,
+        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
+      });
+    }
+
+    if (!user.isActive) {
+      console.log(`[Login] User is inactive: ${query.email}`);
       return res.status(401).json({
         success: false,
         error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
@@ -144,6 +153,7 @@ router.post('/login', async (req, res, next) => {
 
     const valid = await comparePassword(password, user.passwordHash);
     if (!valid) {
+      console.log(`[Login] Password mismatch for user: ${query.email}`);
       return res.status(401).json({
         success: false,
         error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }
