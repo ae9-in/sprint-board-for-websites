@@ -73,8 +73,8 @@ function Signup() {
 
         <div className="relative z-10 w-full flex flex-col justify-between p-16">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <Rocket className="w-7 h-7 text-white" />
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 flex-shrink-0">
+              <Rocket className="w-7 h-7 text-white flex-shrink-0" />
             </div>
             <span className="text-2xl font-black text-premium tracking-tight">SprintBoard</span>
           </Link>
@@ -92,17 +92,17 @@ function Signup() {
               
               <div className="space-y-8">
                 <FeatureItem 
-                  icon={<ShieldCheck className="w-6 h-6 text-emerald-400" />}
+                  icon={<ShieldCheck className="w-6 h-6 text-emerald-400 flex-shrink-0" />}
                   title="Secure by Design"
                   desc="Enterprise-grade isolation for your team's most critical data."
                 />
                 <FeatureItem 
-                  icon={<Zap className="w-6 h-6 text-blue-400" />}
+                  icon={<Zap className="w-6 h-6 text-blue-400 flex-shrink-0" />}
                   title="Ultra-Fast Sync"
                   desc="Real-time updates across all modules with zero latency."
                 />
                 <FeatureItem 
-                  icon={<Globe className="w-6 h-6 text-purple-400" />}
+                  icon={<Globe className="w-6 h-6 text-purple-400 flex-shrink-0" />}
                   title="Global Scale"
                   desc="Built to handle complex multi-org workflows effortlessly."
                 />
@@ -123,30 +123,30 @@ function Signup() {
       </div>
 
       {/* Right Side: Optimized Signup Form */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 relative overflow-hidden">
-        <div className="lg:hidden absolute top-8 left-8 flex items-center gap-3">
-          <Rocket className="w-8 h-8 text-primary" />
-          <span className="text-xl font-bold text-premium">SprintBoard</span>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 relative overflow-hidden">
+        <div className="lg:hidden absolute top-6 left-6 flex items-center gap-2.5 sm:gap-3">
+          <Rocket className="w-6 h-6 sm:w-8 sm:h-8 text-primary flex-shrink-0" />
+          <span className="text-lg sm:text-xl font-bold text-premium">SprintBoard</span>
         </div>
 
-        <div className="w-full max-w-md relative">
-          <div className="mb-12 text-center">
+        <div className="w-full max-w-md relative pt-12 sm:pt-0">
+          <div className="mb-8 sm:mb-12 text-center">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-black text-primary uppercase tracking-widest mb-4"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-black text-primary uppercase tracking-widest mb-3 sm:mb-4 flex-shrink-0 whitespace-nowrap"
             >
-              <Check className="w-3 h-3" /> Step {step} of 2
+              <Check className="w-3 h-3 flex-shrink-0" /> Step {step} of 2
             </motion.div>
-            <h1 className="text-4xl font-black text-premium mb-3">
+            <h1 className="text-3xl sm:text-4xl font-black text-premium mb-2 sm:mb-3">
               {step === 1 ? "Personal Profile" : "Organization Details"}
             </h1>
-            <p className="text-white/40 font-medium text-lg">
+            <p className="text-white/40 font-medium text-base sm:text-lg">
               {step === 1 ? "Tell us who you are" : "Let's set up your workspace"}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
             <AnimatePresence mode="wait">
               {step === 1 ? (
                 <motion.div
@@ -160,13 +160,13 @@ function Signup() {
                     <label className="text-[10px] font-black text-white/40 ml-1 uppercase tracking-[0.2em]">Full Name</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <User className="h-5 w-5 text-white/20 group-focus-within:text-primary transition-colors" />
+                        <User className="h-5 w-5 text-white/20 group-focus-within:text-primary transition-colors flex-shrink-0" />
                       </div>
                       <input
                         type="text"
                         value={form.fullName}
                         onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                        className="glass-input w-full pl-12 h-14 text-lg"
+                        className="glass-input w-full pl-12 h-14 text-base sm:text-lg font-medium"
                         placeholder="John Doe"
                         required
                       />
@@ -177,13 +177,13 @@ function Signup() {
                     <label className="text-[10px] font-black text-white/40 ml-1 uppercase tracking-[0.2em]">Email Address</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-white/20 group-focus-within:text-primary transition-colors" />
+                        <Mail className="h-5 w-5 text-white/20 group-focus-within:text-primary transition-colors flex-shrink-0" />
                       </div>
                       <input
                         type="email"
                         value={form.email}
                         onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        className="glass-input w-full pl-12 h-14 text-lg"
+                        className="glass-input w-full pl-12 h-14 text-base sm:text-lg font-medium"
                         placeholder="john@example.com"
                         required
                       />
@@ -202,13 +202,13 @@ function Signup() {
                     <label className="text-[10px] font-black text-white/40 ml-1 uppercase tracking-[0.2em]">Organization Name</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Briefcase className="h-5 w-5 text-white/20 group-focus-within:text-primary transition-colors" />
+                        <Briefcase className="h-5 w-5 text-white/20 group-focus-within:text-primary transition-colors flex-shrink-0" />
                       </div>
                       <input
                         type="text"
                         value={form.organizationName}
                         onChange={(e) => setForm({ ...form, organizationName: e.target.value })}
-                        className="glass-input w-full pl-12 h-14 text-lg"
+                        className="glass-input w-full pl-12 h-14 text-base sm:text-lg font-medium"
                         placeholder="Acme Industries"
                         required
                         autoFocus
@@ -220,13 +220,13 @@ function Signup() {
                     <label className="text-[10px] font-black text-white/40 ml-1 uppercase tracking-[0.2em]">Password</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-white/20 group-focus-within:text-primary transition-colors" />
+                        <Lock className="h-5 w-5 text-white/20 group-focus-within:text-primary transition-colors flex-shrink-0" />
                       </div>
                       <input
                         type={showPassword ? "text" : "password"}
                         value={form.password}
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        className="glass-input w-full pl-12 pr-12 h-14 text-lg"
+                        className="glass-input w-full pl-12 pr-12 h-14 text-base sm:text-lg font-medium"
                         placeholder="••••••••"
                         required
                         minLength={8}
@@ -234,7 +234,7 @@ function Signup() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/20 hover:text-primary transition-colors"
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/20 hover:text-primary transition-colors flex-shrink-0"
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
@@ -248,14 +248,14 @@ function Signup() {
               <button
                 type="submit"
                 disabled={loading || (step === 1 && !isStep1Valid)}
-                className="btn-primary-premium w-full h-14 text-lg flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed group"
+                className="btn-primary-premium w-full h-14 text-base sm:text-lg flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed group"
               >
                 {loading ? (
-                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin flex-shrink-0" />
                 ) : (
                   <>
                     {step === 1 ? "Next Step" : "Launch Workspace"} 
-                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
                   </>
                 )}
               </button>
@@ -264,7 +264,7 @@ function Signup() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="text-white/40 font-bold hover:text-white transition-colors py-2"
+                  className="text-white/40 text-sm sm:text-base font-bold hover:text-white transition-colors py-2"
                 >
                   Go Back
                 </button>
@@ -272,7 +272,7 @@ function Signup() {
             </div>
           </form>
 
-          <p className="mt-12 text-center text-white/40 font-medium">
+          <p className="mt-8 sm:mt-12 text-center text-xs sm:text-sm text-white/40 font-medium">
             Already have an account?{' '}
             <Link to="/login" className="text-primary font-bold hover:underline transition-all">
               Sign in here
@@ -285,13 +285,13 @@ function Signup() {
 }
 
 const FeatureItem = ({ icon, title, desc }) => (
-  <div className="flex items-start gap-5">
-    <div className="mt-1 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-lg">
+  <div className="flex items-start gap-4 sm:gap-5">
+    <div className="mt-1 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-lg flex-shrink-0">
       {icon}
     </div>
     <div>
-      <h4 className="text-xl font-bold text-white/90">{title}</h4>
-      <p className="text-white/40 leading-relaxed">{desc}</p>
+      <h4 className="text-lg sm:text-xl font-bold text-white/90">{title}</h4>
+      <p className="text-white/40 text-sm sm:text-base leading-relaxed">{desc}</p>
     </div>
   </div>
 );

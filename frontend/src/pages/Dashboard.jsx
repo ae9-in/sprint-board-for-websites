@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '../contexts/SocketContext';
 import { motion } from 'framer-motion';
 
-
 import { 
   TrendingUp, 
   Clock, 
@@ -75,9 +74,6 @@ function Dashboard() {
             recentActivity: [newActivity, ...(old.recentActivity || [])].slice(0, 10)
           };
         });
-        
-        // Optionally invalidate queries to get fresh data
-        // queryClient.invalidateQueries(['dashboard-stats', user?.role]);
       });
 
       return () => {
@@ -85,7 +81,6 @@ function Dashboard() {
       };
     }
   }, [socket, user?.role, queryClient]);
-
 
   const isLoading = statsLoading || projectsLoading;
 
@@ -99,10 +94,10 @@ function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-10">
+      <div className="space-y-8 sm:space-y-10">
         {/* Welcome Hero */}
-        <section className="relative glass-card p-10 overflow-hidden group">
-          <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-700">
+        <section className="relative glass-card p-6 sm:p-10 overflow-hidden group">
+          <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-700 pointer-events-none hidden sm:block">
             <Rocket className="w-40 h-40 text-primary rotate-12" />
           </div>
           
@@ -110,43 +105,43 @@ function Dashboard() {
             <motion.h2 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-4xl font-black text-premium mb-4"
+              className="text-3xl sm:text-4xl font-black text-premium mb-3 sm:mb-4 leading-tight"
             >
               Welcome back, {user?.fullName?.split(' ')[0] || 'Admin'}!
             </motion.h2>
-            <p className="text-white/50 text-lg font-medium leading-relaxed mb-8">
+            <p className="text-white/50 text-base sm:text-lg font-medium leading-relaxed mb-6 sm:mb-8">
               You're currently leading <span className="text-primary font-bold">{organization?.name}</span>. 
               Team velocity is up <span className="text-green-400">12%</span> this week. Keep up the momentum!
             </p>
             
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-3 sm:gap-4">
               {['SUPER_ADMIN', 'ADMIN'].includes(user?.role) && (
-                <Link to="/projects?new=true" className="btn-primary-premium flex items-center gap-2">
-                  <Plus className="w-5 h-5" /> New Project
+                <Link to="/projects?new=true" className="btn-primary-premium flex items-center justify-center gap-2 text-sm sm:text-base px-5 py-3">
+                  <Plus className="w-5 h-5 flex-shrink-0" /> New Project
                 </Link>
               )}
-              <Link to="/sprints" className="glass px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-white/10 transition-all">
-                Active Sprints <ChevronRight className="w-4 h-4" />
+              <Link to="/sprints" className="glass px-5 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all text-sm sm:text-base">
+                Active Sprints <ChevronRight className="w-4 h-4 flex-shrink-0" />
               </Link>
             </div>
           </div>
         </section>
 
         {/* Stats Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {user?.role === 'SUPER_ADMIN' ? (
             <>
               <StatCard 
                 label="Total Projects" 
                 value={stats?.totalProjects} 
-                icon={<Rocket className="w-5 h-5" />} 
+                icon={<Rocket className="w-5 h-5 flex-shrink-0" />} 
                 trend="+3 this week"
                 color="blue"
               />
               <StatCard 
                 label="Delayed Sprints" 
                 value={stats?.delayedProjects} 
-                icon={<Clock className="w-5 h-5" />} 
+                icon={<Clock className="w-5 h-5 flex-shrink-0" />} 
                 trend="Check deadlines"
                 color="red"
                 warning={stats?.delayedProjects > 0}
@@ -154,14 +149,14 @@ function Dashboard() {
               <StatCard 
                 label="Pending Approvals" 
                 value={stats?.pendingApprovals} 
-                icon={<AlertCircle className="w-5 h-5" />} 
+                icon={<AlertCircle className="w-5 h-5 flex-shrink-0" />} 
                 trend="Requires action"
                 color="orange"
               />
               <StatCard 
                 label="Missing Logs" 
                 value={stats?.dailyLogsMissingToday} 
-                icon={<FileCheck className="w-5 h-5" />} 
+                icon={<FileCheck className="w-5 h-5 flex-shrink-0" />} 
                 trend="Expected today"
                 color="emerald"
               />
@@ -171,21 +166,21 @@ function Dashboard() {
               <StatCard 
                 label="My Projects" 
                 value={stats?.assignedProjects} 
-                icon={<Rocket className="w-5 h-5" />} 
+                icon={<Rocket className="w-5 h-5 flex-shrink-0" />} 
                 trend="Active"
                 color="blue"
               />
               <StatCard 
                 label="Open Tasks" 
                 value={stats?.pendingTasks} 
-                icon={<Clock className="w-5 h-5" />} 
+                icon={<Clock className="w-5 h-5 flex-shrink-0" />} 
                 trend="Due soon"
                 color="orange"
               />
               <StatCard 
                 label="Daily Logs" 
                 value={stats?.dailyLogsPending} 
-                icon={<Activity className="w-5 h-5" />} 
+                icon={<Activity className="w-5 h-5 flex-shrink-0" />} 
                 trend={stats?.dailyLogsPending > 0 ? "Pending" : "Completed"}
                 color="red"
                 warning={stats?.dailyLogsPending > 0}
@@ -193,7 +188,7 @@ function Dashboard() {
               <StatCard 
                 label="Tests Assigned" 
                 value={stats?.testingAssignments} 
-                icon={<AlertCircle className="w-5 h-5" />} 
+                icon={<AlertCircle className="w-5 h-5 flex-shrink-0" />} 
                 trend="QA Pipeline"
                 color="cyan"
               />
@@ -202,21 +197,21 @@ function Dashboard() {
         </section>
 
         {/* Main Dashboard Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Chart Section */}
-          <section className={`${['SUPER_ADMIN', 'ADMIN'].includes(user?.role) ? 'lg:col-span-2' : 'lg:col-span-3'} glass-card p-8`}>
-            <div className="flex justify-between items-center mb-10">
+          <section className={`${['SUPER_ADMIN', 'ADMIN'].includes(user?.role) ? 'lg:col-span-2' : 'lg:col-span-3'} glass-card p-6 sm:p-8`}>
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-6 sm:mb-10">
               <div>
-                <h3 className="text-xl font-bold text-premium">Team Velocity</h3>
-                <p className="text-white/40 text-sm">Sprint performance over the last 7 days</p>
+                <h3 className="text-lg sm:text-xl font-bold text-premium">Team Velocity</h3>
+                <p className="text-white/40 text-xs sm:text-sm">Sprint performance over the last 7 days</p>
               </div>
-              <select className="glass bg-transparent text-xs font-bold px-4 py-2 rounded-lg border-white/10 outline-none">
+              <select className="glass bg-[#0F172A] sm:bg-transparent text-xs font-bold px-3 sm:px-4 py-2 rounded-lg border-white/10 outline-none">
                 <option>Last 7 Days</option>
                 <option>Last 30 Days</option>
               </select>
             </div>
             
-            <div className="h-[300px] w-full">
+            <div className="h-[220px] sm:h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
@@ -258,9 +253,9 @@ function Dashboard() {
 
           {/* Activity Pulse - Only for Admins */}
           {['SUPER_ADMIN', 'ADMIN'].includes(user?.role) && (
-            <section className="glass-card p-8 flex flex-col">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-bold text-premium">Activity Pulse</h3>
+            <section className="glass-card p-6 sm:p-8 flex flex-col">
+              <div className="flex justify-between items-center mb-6 sm:mb-8">
+                <h3 className="text-lg sm:text-xl font-bold text-premium">Activity Pulse</h3>
                 <Link to="/activity" className="text-primary text-xs font-bold hover:underline">See All</Link>
               </div>
               
@@ -280,14 +275,14 @@ function Dashboard() {
 
         {/* Recent Projects Grid */}
         <section>
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-2xl font-black text-premium">Recent Projects</h3>
-            <Link to="/projects" className="text-primary font-bold flex items-center gap-2 hover:underline">
+          <div className="flex flex-wrap justify-between items-center gap-4 mb-6 sm:mb-8">
+            <h3 className="text-xl sm:text-2xl font-black text-premium">Recent Projects</h3>
+            <Link to="/projects" className="text-primary font-bold text-sm sm:text-base flex items-center gap-2 hover:underline">
               View Workspace <ArrowUpRight className="w-4 h-4" />
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {projects.length > 0 ? projects.map(p => (
               <ProjectCard 
                 key={p._id}
@@ -321,7 +316,7 @@ function StatCard({ label, value, icon, trend, color, warning }) {
   };
 
   return (
-    <div className="glass-card p-6 flex flex-col">
+    <div className="glass-card p-5 sm:p-6 flex flex-col">
       <div className="flex justify-between items-start mb-4">
         <div className={`p-2.5 rounded-xl border ${colors[color]}`}>
           {icon}
@@ -331,8 +326,8 @@ function StatCard({ label, value, icon, trend, color, warning }) {
         )}
       </div>
       <div className="space-y-1">
-        <p className="text-white/40 text-sm font-bold uppercase tracking-widest">{label}</p>
-        <h4 className="text-3xl font-black text-premium">{value || 0}</h4>
+        <p className="text-white/40 text-xs sm:text-sm font-bold uppercase tracking-widest truncate">{label}</p>
+        <h4 className="text-2xl sm:text-3xl font-black text-premium">{value || 0}</h4>
       </div>
       <div className="mt-4 flex items-center gap-1.5">
         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${colors[color]}`}>
@@ -345,20 +340,19 @@ function StatCard({ label, value, icon, trend, color, warning }) {
 
 function ProjectCard({ id, name, status, progress, team, tag }) {
   return (
-    <Link to={`/projects/${id}`} className="glass-card p-6 group cursor-pointer">
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-2 block">{tag}</span>
-          <h4 className="text-xl font-bold text-premium group-hover:text-primary transition-colors">{name}</h4>
+    <Link to={`/projects/${id}`} className="glass-card p-5 sm:p-6 group cursor-pointer">
+      <div className="flex justify-between items-start mb-6 gap-3">
+        <div className="min-w-0 flex-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-2 block truncate">{tag}</span>
+          <h4 className="text-lg sm:text-xl font-bold text-premium group-hover:text-primary transition-colors truncate">{name}</h4>
         </div>
-        <div className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center group-hover:bg-primary/10 transition-all">
+        <div className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center group-hover:bg-primary/10 transition-all flex-shrink-0">
           <ArrowUpRight className="w-5 h-5 text-white/30 group-hover:text-primary" />
         </div>
       </div>
 
-      
       <div className="space-y-4">
-        <div className="flex justify-between items-center text-sm font-bold">
+        <div className="flex justify-between items-center text-xs sm:text-sm font-bold">
           <span className="text-white/40 uppercase tracking-widest text-[10px]">Progress</span>
           <span className="text-premium">{progress}%</span>
         </div>
@@ -373,7 +367,7 @@ function ProjectCard({ id, name, status, progress, team, tag }) {
           </motion.div>
         </div>
         
-        <div className="pt-4 flex justify-between items-center border-t border-white/5">
+        <div className="pt-4 flex justify-between items-center border-t border-white/5 gap-2">
           <div className="flex -space-x-2">
             {[...Array(Math.min(team, 3))].map((_, i) => (
               <div key={i} className="w-8 h-8 rounded-full border-2 border-[#111827] bg-gray-800 flex items-center justify-center text-[10px] font-bold">
@@ -386,7 +380,7 @@ function ProjectCard({ id, name, status, progress, team, tag }) {
               </div>
             )}
           </div>
-          <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg glass border border-white/5 ${
+          <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg glass border border-white/5 flex-shrink-0 ${
             status === 'In Progress' ? 'text-blue-400' : status === 'Testing' ? 'text-yellow-400' : 'text-gray-400'
           }`}>
             {status}
@@ -399,16 +393,16 @@ function ProjectCard({ id, name, status, progress, team, tag }) {
 
 function ActivityItem({ title, time, type }) {
   return (
-    <div className="flex gap-4 group cursor-pointer">
-      <div className="relative">
+    <div className="flex gap-4 group cursor-pointer items-start">
+      <div className="relative flex-shrink-0">
         <div className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center group-hover:bg-white/5 transition-all">
           <Activity className="w-4 h-4 text-white/30 group-hover:text-primary" />
         </div>
         <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-px h-6 bg-white/5 last:hidden" />
       </div>
-      <div>
-        <h5 className="text-sm font-bold text-premium group-hover:text-primary transition-colors">{title}</h5>
-        <p className="text-[10px] text-white/30 uppercase font-black tracking-widest mt-0.5">{time}</p>
+      <div className="min-w-0 flex-1">
+        <h5 className="text-sm font-bold text-premium group-hover:text-primary transition-colors leading-snug">{title}</h5>
+        <p className="text-[10px] text-white/30 uppercase font-black tracking-widest mt-1">{time}</p>
       </div>
     </div>
   );
@@ -419,11 +413,11 @@ function DashboardSkeleton() {
     <DashboardLayout>
       <div className="space-y-8 animate-pulse">
         <div className="h-64 bg-white/5 rounded-2xl"></div>
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1,2,3,4].map(i => <div key={i} className="h-32 bg-white/5 rounded-2xl"></div>)}
         </div>
-        <div className="grid grid-cols-3 gap-8">
-          <div className="col-span-2 h-96 bg-white/5 rounded-2xl"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 h-96 bg-white/5 rounded-2xl"></div>
           <div className="h-96 bg-white/5 rounded-2xl"></div>
         </div>
       </div>

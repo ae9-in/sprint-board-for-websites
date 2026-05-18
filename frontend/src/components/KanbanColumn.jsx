@@ -20,17 +20,17 @@ function KanbanColumn({ id, title, tasks }) {
   return (
     <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-80 rounded-2xl glass transition-all duration-300 border ${getColumnGlow(id)} ${
+      className={`flex-shrink-0 w-80 max-w-[85vw] snap-start rounded-2xl glass transition-all duration-300 border ${getColumnGlow(id)} ${
         isOver ? 'bg-white/5 ring-2 ring-primary/20' : ''
       } flex flex-col max-h-full`}
     >
       <div className="p-5 border-b border-white/5 sticky top-0 glass z-10 rounded-t-2xl">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <h3 className="font-bold text-premium tracking-tight">{title}</h3>
-            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(37,99,235,0.8)]" />
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <h3 className="font-bold text-premium tracking-tight truncate">{title}</h3>
+            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(37,99,235,0.8)] flex-shrink-0" />
           </div>
-          <span className="text-[10px] font-black bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 text-white/40 uppercase tracking-widest">
+          <span className="text-[10px] font-black bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 text-white/40 uppercase tracking-widest flex-shrink-0">
             {tasks.length}
           </span>
         </div>

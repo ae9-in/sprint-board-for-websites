@@ -86,35 +86,35 @@ function Projects() {
     <DashboardLayout>
       <div className="space-y-8">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Briefcase className="w-4 h-4 text-primary" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Workspaces</span>
             </div>
-            <h1 className="text-4xl font-black text-premium tracking-tight">Projects</h1>
+            <h1 className="text-3xl sm:text-4xl font-black text-premium tracking-tight">Projects</h1>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative group">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            <div className="relative group flex-1 min-w-[200px] sm:flex-initial">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-primary transition-colors" />
               <input 
                 type="text" 
                 placeholder="Search projects..." 
-                className="glass-input pl-10 h-12 w-64 text-sm"
+                className="glass-input pl-10 h-12 w-full sm:w-64 text-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <button className="glass p-3 rounded-xl hover:bg-white/10 transition-all text-white/40 hover:text-white">
+            <button className="glass p-3 rounded-xl hover:bg-white/10 transition-all text-white/40 hover:text-white flex-shrink-0">
               <Filter className="w-5 h-5" />
             </button>
             {user?.role === 'SUPER_ADMIN' && (
               <button
                 onClick={() => setShowCreate(true)}
-                className="btn-primary-premium flex items-center gap-2"
+                className="btn-primary-premium flex items-center gap-2 px-4 sm:px-5 py-3 flex-shrink-0 text-sm sm:text-base"
               >
-                <Plus className="w-5 h-5" /> New Project
+                <Plus className="w-5 h-5" /> <span className="hidden xs:inline">New Project</span>
               </button>
             )}
           </div>
@@ -126,48 +126,49 @@ function Projects() {
             {[1,2,3,4,5,6].map(i => <div key={i} className="h-64 bg-white/5 rounded-2xl animate-pulse"></div>)}
           </div>
         ) : projects.length === 0 ? (
-          <div className="glass-card p-20 text-center">
+          <div className="glass-card p-12 sm:p-20 text-center">
             <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-6 border border-white/10">
               <Briefcase className="w-10 h-10 text-white/20" />
             </div>
             <h3 className="text-xl font-bold text-premium mb-2">No projects found</h3>
-            <p className="text-white/40 max-w-xs mx-auto">Try adjusting your search or create a new project to get started.</p>
+            <p className="text-white/40 max-w-xs mx-auto text-sm sm:text-base">Try adjusting your search or create a new project to get started.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project, idx) => (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
                 key={project._id}
+                className="h-full"
               >
                 <Link
                   to={`/projects/${project._id}`}
-                  className="glass-card p-8 flex flex-col h-full group"
+                  className="glass-card p-6 sm:p-8 flex flex-col h-full group"
                 >
-                  <div className="flex justify-between items-start mb-6">
-                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${getPriorityStyle(project.priority)}`}>
+                  <div className="flex justify-between items-start mb-6 gap-2">
+                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border flex-shrink-0 ${getPriorityStyle(project.priority)}`}>
                       {formatPriority(project.priority)}
                     </span>
-                    <div className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center group-hover:bg-primary/10 transition-all">
+                    <div className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center group-hover:bg-primary/10 transition-all flex-shrink-0">
                       <ArrowUpRight className="w-5 h-5 text-white/30 group-hover:text-primary" />
                     </div>
                   </div>
 
-                  <h3 className="text-2xl font-black text-premium group-hover:text-primary transition-colors mb-2 leading-tight">
+                  <h3 className="text-xl sm:text-2xl font-black text-premium group-hover:text-primary transition-colors mb-2 leading-tight truncate">
                     {project.name}
                   </h3>
                   <p className="text-white/40 text-sm font-medium mb-6 line-clamp-2">Client: {project.clientName}</p>
 
                   <div className="space-y-4 mt-auto">
-                    <div className="flex justify-between items-end">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Status</span>
-                        <div className="text-xs font-bold text-premium">{formatStatus(project.status)}</div>
+                    <div className="flex justify-between items-end gap-2">
+                      <div className="space-y-1 min-w-0">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/20 block truncate">Status</span>
+                        <div className="text-xs font-bold text-premium truncate">{formatStatus(project.status)}</div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Progress</span>
+                      <div className="text-right flex-shrink-0">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/20 block">Progress</span>
                         <div className="text-xs font-bold text-primary">{project.progressPercent}%</div>
                       </div>
                     </div>
@@ -179,16 +180,16 @@ function Projects() {
                       />
                     </div>
 
-                    <div className="pt-4 flex justify-between items-center border-t border-white/5">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5 text-white/20" />
-                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                    <div className="pt-4 flex justify-between items-center border-t border-white/5 gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Calendar className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />
+                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest truncate">
                           {new Date(project.deadline).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Layout className="w-3.5 h-3.5 text-white/20" />
-                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Layout className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />
+                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest truncate">
                           {formatStage(project.currentStage)}
                         </span>
                       </div>
@@ -209,104 +210,106 @@ function Projects() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="glass-card w-full max-w-2xl overflow-hidden shadow-[0_0_100px_rgba(37,99,235,0.1)]"
+              className="glass-card w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_100px_rgba(37,99,235,0.1)] border border-white/10"
             >
-              <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between">
+              <div className="px-6 sm:px-8 py-5 border-b border-white/5 flex items-center justify-between flex-shrink-0">
                 <div>
-                  <h3 className="text-2xl font-black text-premium">Create Project</h3>
-                  <p className="text-white/40 text-sm font-medium">Set up a new workspace for your team</p>
+                  <h3 className="text-xl sm:text-2xl font-black text-premium">Create Project</h3>
+                  <p className="text-white/40 text-xs sm:text-sm font-medium">Set up a new workspace for your team</p>
                 </div>
-                <button onClick={() => setShowCreate(false)} className="p-2 glass rounded-lg hover:bg-white/10 text-white/20 hover:text-white transition-all">
+                <button onClick={() => setShowCreate(false)} className="p-2 glass rounded-lg hover:bg-white/10 text-white/20 hover:text-white transition-all flex-shrink-0">
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              <form onSubmit={handleCreate} className="p-8 space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+              <form onSubmit={handleCreate} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-6 sm:p-8 space-y-6 overflow-y-auto no-scrollbar flex-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Project Name</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g., Phoenix SaaS"
+                        className="glass-input w-full h-12 text-sm font-bold"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Client Name</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g., Acme Corp"
+                        className="glass-input w-full h-12 text-sm font-bold"
+                        value={form.clientName}
+                        onChange={(e) => setForm({ ...form, clientName: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Project Name</label>
-                    <input
-                      type="text"
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Project Overview</label>
+                    <textarea
                       required
-                      placeholder="e.g., Phoenix SaaS"
-                      className="glass-input w-full h-12 text-sm font-bold"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="Describe the project goals and scope..."
+                      className="glass-input w-full min-h-[100px] py-4 text-sm font-medium resize-none"
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Client Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g., Acme Corp"
-                      className="glass-input w-full h-12 text-sm font-bold"
-                      value={form.clientName}
-                      onChange={(e) => setForm({ ...form, clientName: e.target.value })}
-                    />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Priority</label>
+                      <select
+                        className="glass-input w-full h-12 text-sm font-bold appearance-none bg-no-repeat bg-[right_1rem_center]"
+                        value={form.priority}
+                        onChange={(e) => setForm({ ...form, priority: e.target.value })}
+                      >
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="CRITICAL">Critical</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Start Date</label>
+                      <input
+                        type="date"
+                        required
+                        className="glass-input w-full h-12 text-sm font-bold"
+                        value={form.startDate}
+                        onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Deadline</label>
+                      <input
+                        type="date"
+                        required
+                        className="glass-input w-full h-12 text-sm font-bold"
+                        value={form.deadline}
+                        onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Project Overview</label>
-                  <textarea
-                    required
-                    placeholder="Describe the project goals and scope..."
-                    className="glass-input w-full min-h-[100px] py-4 text-sm font-medium resize-none"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Priority</label>
-                    <select
-                      className="glass-input w-full h-12 text-sm font-bold appearance-none"
-                      value={form.priority}
-                      onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                    >
-                      <option value="LOW">Low</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="HIGH">High</option>
-                      <option value="CRITICAL">Critical</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Start Date</label>
-                    <input
-                      type="date"
-                      required
-                      className="glass-input w-full h-12 text-sm font-bold"
-                      value={form.startDate}
-                      onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Deadline</label>
-                    <input
-                      type="date"
-                      required
-                      className="glass-input w-full h-12 text-sm font-bold"
-                      value={form.deadline}
-                      onChange={(e) => setForm({ ...form, deadline: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-10 flex gap-4">
+                <div className="px-6 sm:px-8 py-5 border-t border-white/5 flex gap-4 bg-[#111827]/50 flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowCreate(false)}
-                    className="flex-1 h-14 rounded-xl font-bold text-white/50 hover:bg-white/5 transition-all"
+                    className="flex-1 h-12 sm:h-14 rounded-xl font-bold text-white/50 hover:bg-white/5 transition-all text-sm sm:text-base"
                   >
                     Discard
                   </button>
                   <button
                     type="submit"
-                    className="flex-[2] h-14 btn-primary-premium flex items-center justify-center gap-2"
+                    className="flex-[2] h-12 sm:h-14 btn-primary-premium flex items-center justify-center gap-2 text-sm sm:text-base"
                   >
-                    Initialize Workspace <ArrowUpRight className="w-5 h-5" />
+                    Initialize Workspace <ArrowUpRight className="w-5 h-5 flex-shrink-0" />
                   </button>
                 </div>
               </form>

@@ -55,29 +55,29 @@ function SettingsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 max-w-4xl">
+      <div className="space-y-6 sm:space-y-8 max-w-4xl">
         {/* Header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Settings className="w-4 h-4 text-primary" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Workspace</span>
+            <Settings className="w-4 h-4 text-primary flex-shrink-0" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 truncate">Workspace</span>
           </div>
-          <h1 className="text-4xl font-black text-premium tracking-tight">Settings</h1>
+          <h1 className="text-3xl sm:text-4xl font-black text-premium tracking-tight">Settings</h1>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 p-1 glass rounded-2xl w-fit">
+        <div className="flex gap-1.5 sm:gap-2 p-1.5 glass rounded-2xl w-full sm:w-fit overflow-x-auto no-scrollbar">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
                 activeTab === id
                   ? 'bg-primary text-white shadow-lg shadow-primary/20'
                   : 'text-white/40 hover:text-white'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4 flex-shrink-0" />
               {label}
             </button>
           ))}
@@ -86,17 +86,17 @@ function SettingsPage() {
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="glass-card p-8">
+            <div className="glass-card p-6 sm:p-8">
               <h3 className="text-lg font-black text-premium mb-6 flex items-center gap-2">
-                <User className="w-5 h-5 text-primary" /> Your Profile
+                <User className="w-5 h-5 text-primary flex-shrink-0" /> Your Profile
               </h3>
-              <div className="flex items-center gap-6 mb-8 pb-8 border-b border-white/5">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-primary/20">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8 pb-8 border-b border-white/5">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl sm:text-3xl font-black text-white shadow-lg shadow-primary/20 flex-shrink-0">
                   {user?.fullName?.[0]}
                 </div>
-                <div>
-                  <h4 className="text-xl font-black text-premium">{user?.fullName}</h4>
-                  <p className="text-white/40">{user?.email}</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-lg sm:text-xl font-black text-premium truncate">{user?.fullName}</h4>
+                  <p className="text-white/40 text-xs sm:text-sm truncate">{user?.email}</p>
                   <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 mt-2 inline-block">
                     {user?.role?.replace('_', ' ')}
                   </span>
@@ -104,26 +104,26 @@ function SettingsPage() {
               </div>
               <form onSubmit={handleProfileSave} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">Full Name</label>
+                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Full Name</label>
                   <input
                     type="text"
-                    className="glass-input w-full h-12 text-sm"
+                    className="glass-input w-full h-12 text-sm font-bold"
                     value={profileForm.fullName}
                     onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">Email Address</label>
+                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Email Address</label>
                   <input
                     type="email"
-                    className="glass-input w-full h-12 text-sm opacity-50 cursor-not-allowed"
+                    className="glass-input w-full h-12 text-sm opacity-50 cursor-not-allowed font-medium"
                     value={user?.email}
                     disabled
                   />
                 </div>
                 <div className="pt-4">
-                  <button type="submit" disabled={saving} className="btn-primary-premium flex items-center gap-2">
-                    <Save className="w-4 h-4" /> Save Changes
+                  <button type="submit" disabled={saving} className="btn-primary-premium flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 text-sm sm:text-base">
+                    <Save className="w-4 h-4 flex-shrink-0" /> Save Changes
                   </button>
                 </div>
               </form>
@@ -134,9 +134,9 @@ function SettingsPage() {
         {/* Organization Tab */}
         {activeTab === 'organization' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="glass-card p-8">
+            <div className="glass-card p-6 sm:p-8">
               <h3 className="text-lg font-black text-premium mb-6 flex items-center gap-2">
-                <Building className="w-5 h-5 text-primary" /> Organization Details
+                <Building className="w-5 h-5 text-primary flex-shrink-0" /> Organization Details
               </h3>
               <div className="space-y-4">
                 {[
@@ -144,9 +144,9 @@ function SettingsPage() {
                   { label: 'Organization Slug', value: organization?.slug },
                   { label: 'Plan', value: organization?.plan || 'FREE' },
                 ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between p-4 glass rounded-xl border border-white/5">
-                    <span className="text-sm font-bold text-white/40 uppercase tracking-widest">{label}</span>
-                    <span className="text-sm font-bold text-premium">{value}</span>
+                  <div key={label} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 glass rounded-xl border border-white/5 gap-1">
+                    <span className="text-xs sm:text-sm font-bold text-white/40 uppercase tracking-widest">{label}</span>
+                    <span className="text-sm font-bold text-premium truncate">{value}</span>
                   </div>
                 ))}
               </div>
@@ -157,9 +157,9 @@ function SettingsPage() {
         {/* Security Tab */}
         {activeTab === 'security' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="glass-card p-8">
+            <div className="glass-card p-6 sm:p-8">
               <h3 className="text-lg font-black text-premium mb-6 flex items-center gap-2">
-                <Key className="w-5 h-5 text-primary" /> Change Password
+                <Key className="w-5 h-5 text-primary flex-shrink-0" /> Change Password
               </h3>
               <form onSubmit={handlePasswordChange} className="space-y-4">
                 {[
@@ -168,13 +168,13 @@ function SettingsPage() {
                   { label: 'Confirm New Password', field: 'confirmPassword' },
                 ].map(({ label, field }) => (
                   <div key={field} className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest">{label}</label>
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">{label}</label>
                     <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 flex-shrink-0" />
                       <input
                         type="password"
                         required
-                        className="glass-input w-full h-12 pl-11 text-sm"
+                        className="glass-input w-full h-12 pl-11 text-sm font-medium"
                         value={passwordForm[field]}
                         onChange={(e) => setPasswordForm({ ...passwordForm, [field]: e.target.value })}
                         minLength={field !== 'currentPassword' ? 8 : undefined}
@@ -183,8 +183,8 @@ function SettingsPage() {
                   </div>
                 ))}
                 <div className="pt-4">
-                  <button type="submit" disabled={saving} className="btn-primary-premium flex items-center gap-2">
-                    <Shield className="w-4 h-4" /> Update Password
+                  <button type="submit" disabled={saving} className="btn-primary-premium flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 text-sm sm:text-base">
+                    <Shield className="w-4 h-4 flex-shrink-0" /> Update Password
                   </button>
                 </div>
               </form>
