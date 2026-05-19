@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useSocket } from '../contexts/SocketContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import {
   formatStage,
@@ -38,12 +39,11 @@ function ProjectDetail() {
   const { id } = useParams();
   const { user } = useAuthStore();
   const socket = useSocket();
-  const [project, setProject] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', email: '', userType: 'DEVELOPER' });
-  const [dailyLogs, setDailyLogs] = useState([]);
   const [showLogForm, setShowLogForm] = useState(false);
   const [logForm, setLogForm] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -66,63 +66,78 @@ function ProjectDetail() {
   const [selectedMemberId, setSelectedMemberId] = useState('');
 
   // Link Upload & Workspace Feature States
-  const [files, setFiles] = useState([]);
   const [showFileForm, setShowFileForm] = useState(false);
   const [fileForm, setFileForm] = useState({ fileName: '', googleDriveLink: '', linkedEntityType: 'REQUIREMENT' });
 
-  const [testingReports, setTestingReports] = useState([]);
   const [showTestingForm, setShowTestingForm] = useState(false);
   const [testingForm, setTestingForm] = useState({ testCaseId: '', moduleTested: '', bugDescription: '', reproductionSteps: '', severity: 'MEDIUM', googleDriveLink: '' });
 
-  const [maintenanceLogs, setMaintenanceLogs] = useState([]);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [maintenanceForm, setMaintenanceForm] = useState({ issueTitle: '', description: '', severity: 'MEDIUM', googleDriveLink: '' });
 
-  const [featureRequests, setFeatureRequests] = useState([]);
   const [showFeatureForm, setShowFeatureForm] = useState(false);
   const [featureForm, setFeatureForm] = useState({ title: '', description: '', googleDriveLink: '' });
 
-  const fetchFiles = async () => {
-    try {
-      const res = await api.get(`/projects/${id}/files`);
-      setFiles(res.data.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // Use React Query for lightning fast cached fetching
+  const { data: project, isLoading: loading } = useQuery({
+    queryKey: ['project', id],
+    queryFn: async () => {
+      const response = await api.get(`/projects/${id}`);
+      return response.data.data;
+    },
+    enabled: !!id,
+  });
 
-  const fetchTestingReports = async () => {
-    try {
-      const res = await api.get(`/projects/${id}/testing-reports`);
-      setTestingReports(res.data.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const { data: files = [] } = useQuery({
+    queryKey: ['project-files', id],
+    queryFn: async () => {
+      const response = await api.get(`/projects/${id}/files`);
+      return response.data.data || [];
+    },
+    enabled: !!id && activeTab === 'files',
+  });
 
-  const fetchMaintenanceLogs = async () => {
-    try {
-      const res = await api.get(`/projects/${id}/maintenance-logs`);
-      setMaintenanceLogs(res.data.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const { data: testingReports = [] } = useQuery({
+    queryKey: ['project-testing', id],
+    queryFn: async () => {
+      const response = await api.get(`/projects/${id}/testing-reports`);
+      return response.data.data || [];
+    },
+    enabled: !!id && activeTab === 'testing',
+  });
 
-  const fetchFeatureRequests = async () => {
-    try {
-      const res = await api.get(`/projects/${id}/feature-requests`);
-      setFeatureRequests(res.data.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const { data: maintenanceLogs = [] } = useQuery({
+    queryKey: ['project-maintenance', id],
+    queryFn: async () => {
+      const response = await api.get(`/projects/${id}/maintenance-logs`);
+      return response.data.data || [];
+    },
+    enabled: !!id && activeTab === 'maintenance',
+  });
+
+  const { data: featureRequests = [] } = useQuery({
+    queryKey: ['project-features', id],
+    queryFn: async () => {
+      const response = await api.get(`/projects/${id}/feature-requests`);
+      return response.data.data || [];
+    },
+    enabled: !!id && activeTab === 'features',
+  });
+
+  const { data: dailyLogs = [] } = useQuery({
+    queryKey: ['project-daily-logs', id],
+    queryFn: async () => {
+      const response = await api.get(`/projects/${id}/daily-logs`);
+      return response.data.data || [];
+    },
+    enabled: !!id && activeTab === 'daily-log',
+  });
 
   const handleAddFile = async (e) => {
     e.preventDefault();
     try {
       const res = await api.post(`/projects/${id}/files`, fileForm);
-      setFiles(prev => [res.data.data, ...prev]);
+      queryClient.setQueryData(['project-files', id], prev => [res.data.data, ...(prev || [])]);
       setFileForm({ fileName: '', googleDriveLink: '', linkedEntityType: 'REQUIREMENT' });
       setShowFileForm(false);
       toast.success('Document uploaded successfully! 🚀');
@@ -135,7 +150,7 @@ function ProjectDetail() {
     e.preventDefault();
     try {
       const res = await api.post(`/projects/${id}/testing-reports`, testingForm);
-      setTestingReports(prev => [res.data.data, ...prev]);
+      queryClient.setQueryData(['project-testing', id], prev => [res.data.data, ...(prev || [])]);
       setTestingForm({ testCaseId: '', moduleTested: '', bugDescription: '', reproductionSteps: '', severity: 'MEDIUM', googleDriveLink: '' });
       setShowTestingForm(false);
       toast.success('Testing report uploaded successfully! 🎯');
@@ -148,7 +163,7 @@ function ProjectDetail() {
     e.preventDefault();
     try {
       const res = await api.post(`/projects/${id}/maintenance-logs`, maintenanceForm);
-      setMaintenanceLogs(prev => [res.data.data, ...prev]);
+      queryClient.setQueryData(['project-maintenance', id], prev => [res.data.data, ...(prev || [])]);
       setMaintenanceForm({ issueTitle: '', description: '', severity: 'MEDIUM', googleDriveLink: '' });
       setShowMaintenanceForm(false);
       toast.success('Maintenance issue logged successfully! 🔧');
@@ -161,7 +176,7 @@ function ProjectDetail() {
     try {
       const nextStatus = currentStatus === 'OPEN' ? 'RESOLVED' : 'CLOSED';
       const res = await api.patch(`/projects/${id}/maintenance-logs/${logId}`, { status: nextStatus, resolutionNotes: 'Resolved by ' + user?.fullName });
-      setMaintenanceLogs(prev => prev.map(log => log._id === logId ? res.data.data : log));
+      queryClient.setQueryData(['project-maintenance', id], prev => prev?.map(log => log._id === logId ? res.data.data : log));
       toast.success(`Maintenance log marked as ${nextStatus}! 🎉`);
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to update maintenance log');
@@ -172,7 +187,7 @@ function ProjectDetail() {
     e.preventDefault();
     try {
       const res = await api.post(`/projects/${id}/feature-requests`, featureForm);
-      setFeatureRequests(prev => [res.data.data, ...prev]);
+      queryClient.setQueryData(['project-features', id], prev => [res.data.data, ...(prev || [])]);
       setFeatureForm({ title: '', description: '', googleDriveLink: '' });
       setShowFeatureForm(false);
       toast.success('Feature enhancement request added successfully! 🚀');
@@ -199,10 +214,6 @@ function ProjectDetail() {
   }, [showAddMember]);
 
   useEffect(() => {
-    fetchProject();
-  }, [id]);
-
-  useEffect(() => {
     if (project) {
       setDeploymentForm({
         gitLink: project.gitLink || '',
@@ -214,15 +225,6 @@ function ProjectDetail() {
     }
   }, [project]);
 
-  useEffect(() => {
-    if (project) {
-      if (activeTab === 'files') fetchFiles();
-      if (activeTab === 'testing') fetchTestingReports();
-      if (activeTab === 'maintenance') fetchMaintenanceLogs();
-      if (activeTab === 'features') fetchFeatureRequests();
-    }
-  }, [activeTab, id, project]);
-
   // Real-time synchronization
   useEffect(() => {
     if (socket && id) {
@@ -230,20 +232,18 @@ function ProjectDetail() {
       
       socket.on('project-updated', (updatedProject) => {
         if (updatedProject._id === id || updatedProject.id === id) {
-          setProject(prev => ({ ...prev, ...updatedProject }));
+          queryClient.setQueryData(['project', id], prev => prev ? ({ ...prev, ...updatedProject }) : updatedProject);
           toast.info('Project data updated in real-time');
         }
       });
 
       socket.on('stage-updated', ({ stage }) => {
-        fetchProject();
+        queryClient.invalidateQueries(['project', id]);
         toast.info(`Stage ${formatStage(stage.stageType)} updated`);
       });
 
       socket.on('log-created', (newLog) => {
-        if (activeTab === 'daily-log') {
-          setDailyLogs(prev => [newLog, ...prev]);
-        }
+        queryClient.setQueryData(['project-daily-logs', id], prev => [newLog, ...(prev || [])]);
         toast.info('New daily log submitted by team member');
       });
 
@@ -253,39 +253,13 @@ function ProjectDetail() {
         socket.off('log-created');
       };
     }
-  }, [socket, id, activeTab]);
-
-  const fetchProject = async () => {
-    try {
-      const response = await api.get(`/projects/${id}`);
-      setProject(response.data.data);
-    } catch (err) {
-      console.error('Failed to fetch project');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchDailyLogs = async () => {
-    try {
-      const res = await api.get(`/projects/${id}/daily-logs`);
-      setDailyLogs(res.data.data || []);
-    } catch (err) {
-      console.error('Failed to fetch daily logs');
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'daily-log') {
-      fetchDailyLogs();
-    }
-  }, [activeTab, id]);
+  }, [socket, id, queryClient]);
 
   const handleApproveStage = async (stageType) => {
     try {
       await api.post(`/projects/${id}/stages/${stageType}/approve`, {});
       toast.success('Stage approved successfully');
-      fetchProject();
+      queryClient.invalidateQueries(['project', id]);
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to approve stage');
     }
@@ -297,7 +271,7 @@ function ProjectDetail() {
     try {
       await api.post(`/projects/${id}/stages/${stageType}/reject`, { rejectionNotes: notes });
       toast.success('Stage rejected');
-      fetchProject();
+      queryClient.invalidateQueries(['project', id]);
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to reject stage');
     }
@@ -320,7 +294,7 @@ function ProjectDetail() {
         issuesBlockers: '',
         notes: ''
       });
-      fetchDailyLogs();
+      queryClient.invalidateQueries(['project-daily-logs', id]);
       toast.success('Daily log submitted');
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to submit log');
@@ -333,7 +307,7 @@ function ProjectDetail() {
       await api.post(`/projects/${id}/members`, newMember);
       setShowAddMember(false);
       setNewMember({ name: '', email: '', userType: 'DEVELOPER' });
-      fetchProject();
+      queryClient.invalidateQueries(['project', id]);
       toast.success('Team member added');
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to add member');
@@ -344,7 +318,7 @@ function ProjectDetail() {
     e.preventDefault();
     try {
       const response = await api.patch(`/projects/${id}`, deploymentForm);
-      setProject(response.data.data);
+      queryClient.setQueryData(['project', id], response.data.data);
       setShowEditDeployment(false);
       toast.success('Deployment details updated successfully! 🚀');
     } catch (err) {
@@ -368,6 +342,7 @@ function ProjectDetail() {
       <div className="space-y-6 sm:space-y-8">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
+
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <Link to="/projects" className="p-2 sm:p-2.5 glass rounded-xl hover:bg-white/10 transition-all text-white/50 hover:text-white flex-shrink-0">
               <ChevronLeft className="w-5 h-5" />

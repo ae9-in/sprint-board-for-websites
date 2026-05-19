@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import api from '../services/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -27,9 +28,9 @@ import {
 function Projects() {
   const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showCreate, setShowCreate] = useState(searchParams.get('new') === 'true');
   const [form, setForm] = useState({
     name: '',
@@ -40,23 +41,26 @@ function Projects() {
     deadline: '',
   });
 
+  // Debounce search query to prevent excessive backend requests
   useEffect(() => {
-    fetchProjects();
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
   }, [search]);
 
-  const fetchProjects = async () => {
-    try {
+  // Use React Query for caching, automatic background refetches, and query deduplication
+  const { data: projects = [], isLoading } = useQuery({
+    queryKey: ['projects', debouncedSearch],
+    queryFn: async () => {
       const params = new URLSearchParams();
-      if (search) params.append('search', search);
+      if (debouncedSearch) params.append('search', debouncedSearch);
       params.append('limit', '50');
       const response = await api.get(`/projects?${params}`);
-      setProjects(response.data.data || []);
-    } catch (err) {
-      console.error('Failed to fetch projects');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return response.data.data || [];
+    },
+    enabled: !!user,
+  });
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -76,11 +80,13 @@ function Projects() {
         startDate: '',
         deadline: '',
       });
-      fetchProjects();
+      // Invalidate the cache to trigger a clean background reload
+      queryClient.invalidateQueries(['projects']);
     } catch (err) {
       alert(err.response?.data?.error?.message || 'Failed to create project');
     }
   };
+
 
   return (
     <DashboardLayout>
@@ -121,7 +127,7 @@ function Projects() {
         </div>
 
         {/* Project Grid */}
-        {loading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1,2,3,4,5,6].map(i => <div key={i} className="h-64 bg-white/5 rounded-2xl animate-pulse"></div>)}
           </div>
