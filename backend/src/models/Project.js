@@ -68,7 +68,12 @@ const projectSchema = new mongoose.Schema({
     completedTasks: { type: Number, default: 0 },
     openBugs: { type: Number, default: 0 },
     openMaintenanceIssues: { type: Number, default: 0 }
-  }
+  },
+  gitLink: { type: String, trim: true, default: '' },
+  vercelBackendLink: { type: String, trim: true, default: '' },
+  vercelFrontendLink: { type: String, trim: true, default: '' },
+  envDriveLink: { type: String, trim: true, default: '' },
+  walkthroughVideoUrl: { type: String, trim: true, default: '' }
 }, {
   timestamps: true
 });

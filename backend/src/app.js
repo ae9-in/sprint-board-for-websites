@@ -36,20 +36,6 @@ app.use(express.urlencoded({ extended: true }));
 // Apply rate limiting to auth routes
 app.use('/api/auth', rateLimiter.authLimiter);
 
-// TEMPORARY DEBUG ROUTE - DELETE AFTER FIXING 401
-app.get('/api/debug-env', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      has_mongodb_uri: !!process.env.MONGODB_URI,
-      mongodb_uri_ends_with_sprintboard: process.env.MONGODB_URI?.includes('/sprintboard'),
-      has_jwt_access_secret: !!process.env.JWT_ACCESS_SECRET,
-      node_env: process.env.NODE_ENV,
-      timestamp: new Date().toISOString()
-    }
-  });
-});
-
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });

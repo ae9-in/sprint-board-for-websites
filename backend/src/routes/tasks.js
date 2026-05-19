@@ -51,7 +51,7 @@ router.get('/projects/:projectId/tasks', auth, async (req, res, next) => {
 });
 
 // POST /api/projects/:projectId/tasks - Create a task
-router.post('/projects/:projectId/tasks', auth, async (req, res, next) => {
+router.post('/projects/:projectId/tasks', auth, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req, res, next) => {
   try {
     assertObjectId(req.params.projectId, 'Project ID');
 
@@ -111,7 +111,7 @@ router.post('/projects/:projectId/tasks', auth, async (req, res, next) => {
 });
 
 // PATCH /api/projects/:projectId/tasks/:id - Update task
-router.patch('/projects/:projectId/tasks/:id', auth, async (req, res, next) => {
+router.patch('/projects/:projectId/tasks/:id', auth, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req, res, next) => {
   try {
     assertObjectId(req.params.id, 'Task ID');
 
@@ -156,7 +156,7 @@ router.patch('/projects/:projectId/tasks/:id', auth, async (req, res, next) => {
 });
 
 // PATCH /api/projects/:projectId/tasks/:id/status - Update task status
-router.patch('/projects/:projectId/tasks/:id/status', auth, async (req, res, next) => {
+router.patch('/projects/:projectId/tasks/:id/status', auth, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req, res, next) => {
   try {
     assertObjectId(req.params.id, 'Task ID');
 
@@ -214,7 +214,7 @@ router.patch('/projects/:projectId/tasks/:id/status', auth, async (req, res, nex
 });
 
 // DELETE /api/projects/:projectId/tasks/:id - Delete task
-router.delete('/projects/:projectId/tasks/:id', auth, async (req, res, next) => {
+router.delete('/projects/:projectId/tasks/:id', auth, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req, res, next) => {
   try {
     assertObjectId(req.params.id, 'Task ID');
 

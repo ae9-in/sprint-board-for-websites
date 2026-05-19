@@ -189,10 +189,7 @@ function Login() {
           </form>
 
           <p className="mt-8 sm:mt-12 text-center text-xs sm:text-sm text-white/40 font-medium">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-primary font-bold hover:underline transition-all">
-              Start 14-day free trial
-            </Link>
+            Registration is by invitation only. Please contact your administrator to receive access.
           </p>
 
         </motion.div>

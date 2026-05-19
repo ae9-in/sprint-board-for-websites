@@ -42,8 +42,7 @@ const LandingPage = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-            <Link to="/login" className="text-xs sm:text-sm font-medium hover:text-white transition-colors whitespace-nowrap">Log in</Link>
-            <Link to="/signup" className="btn-primary-premium text-xs sm:text-sm px-3 py-1.5 sm:px-5 sm:py-2.5 whitespace-nowrap rounded-lg sm:rounded-xl">Get Started</Link>
+            <Link to="/login" className="btn-primary-premium text-xs sm:text-sm px-3 py-1.5 sm:px-5 sm:py-2.5 whitespace-nowrap rounded-lg sm:rounded-xl">Access Workspace</Link>
           </div>
         </div>
       </nav>
@@ -87,8 +86,8 @@ const LandingPage = () => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0"
           >
-            <Link to="/signup" className="btn-primary-premium px-8 sm:px-10 py-4 text-base sm:text-lg w-full sm:w-auto flex items-center justify-center gap-2 group">
-              Start Free Trial <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+            <Link to="/login" className="btn-primary-premium px-8 sm:px-10 py-4 text-base sm:text-lg w-full sm:w-auto flex items-center justify-center gap-2 group">
+              Access Workspace <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
             </Link>
             <button className="glass px-8 sm:px-10 py-4 rounded-xl font-semibold w-full sm:w-auto hover:bg-white/10 transition-all text-base sm:text-lg">
               Book a Demo

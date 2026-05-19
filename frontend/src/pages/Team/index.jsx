@@ -27,7 +27,7 @@ function Team() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: '', role: 'USER', userType: 'DEVELOPER' });
+  const [inviteForm, setInviteForm] = useState({ fullName: '', email: '', password: '', role: 'USER', userType: 'DEVELOPER' });
   const [inviting, setInviting] = useState(false);
   const [inviteLink, setInviteLink] = useState(null);
 
@@ -38,15 +38,11 @@ function Team() {
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/auth/sessions'); // fallback to org users
-      // Try to get org users via a project member list or fallback
-      try {
-        const res2 = await api.get('/projects?limit=1');
-        // Get users from organization via dashboard endpoint
-      } catch {}
-      setMembers([]);
+      const res = await api.get('/auth/members');
+      setMembers(res.data.data || []);
     } catch (err) {
       console.error(err);
+      toast.error('Failed to load team members');
     } finally {
       setLoading(false);
     }
@@ -57,9 +53,17 @@ function Team() {
     setInviting(true);
     try {
       const res = await api.post('/auth/invite/send', inviteForm);
-      const { inviteLink: link } = res.data.data;
-      setInviteLink(link);
-      toast.success('Invitation created! Share the link below.');
+      if (inviteForm.fullName && inviteForm.password) {
+        toast.success('Team member added successfully!');
+        setShowInvite(false);
+        setInviteForm({ fullName: '', email: '', password: '', role: 'USER', userType: 'DEVELOPER' });
+        fetchMembers();
+      } else {
+        const { inviteLink: link } = res.data.data;
+        setInviteLink(link);
+        toast.success('Invitation created! Share the link below.');
+        fetchMembers();
+      }
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to send invitation');
     } finally {
@@ -81,10 +85,10 @@ function Team() {
           </div>
           {user?.role === 'SUPER_ADMIN' && (
             <button
-              onClick={() => { setShowInvite(true); setInviteLink(null); }}
+              onClick={() => { setShowInvite(true); setInviteLink(null); setInviteForm({ fullName: '', email: '', password: '', role: 'USER', userType: 'DEVELOPER' }); }}
               className="btn-primary-premium flex items-center justify-center gap-2 px-5 py-3 text-sm sm:text-base w-full sm:w-auto flex-shrink-0"
             >
-              <Plus className="w-5 h-5 flex-shrink-0" /> Invite Member
+              <Plus className="w-5 h-5 flex-shrink-0" /> Add Team Member
             </button>
           )}
         </div>
@@ -109,8 +113,69 @@ function Team() {
             </div>
           </div>
           <p className="text-white/30 text-xs sm:text-sm font-medium border-t border-white/5 pt-6 leading-relaxed">
-            Team management features are available. Use the <span className="text-primary font-bold">"Invite Member"</span> button to add team members to your organization workspace.
+            Team management features are available. Use the <span className="text-primary font-bold">"Add Team Member"</span> button to add team members to your organization workspace directly with a login password.
           </p>
+        </div>
+
+        {/* Team Members List */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl sm:text-2xl font-black text-premium">Team Directory ({members.length})</h2>
+            {loading && <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+          </div>
+
+          {members.length === 0 ? (
+            <div className="glass-card p-12 text-center">
+              <Users className="w-12 h-12 text-white/20 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-white/60 mb-1">No other team members yet</h3>
+              <p className="text-white/30 text-sm">Add team members using the "Add Team Member" button above.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {members.map((member) => {
+                const TypeIcon = USER_TYPE_ICONS[member.userType] || Code;
+                return (
+                  <motion.div
+                    key={member._id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-card p-6 flex flex-col justify-between hover:border-primary/30 transition-all duration-300 relative group overflow-hidden"
+                  >
+                    {/* Glow effect on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                    <div className="flex items-start gap-4 relative z-10">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20 flex items-center justify-center text-lg font-black text-white/80 flex-shrink-0">
+                        {member.fullName?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-black text-premium truncate text-base sm:text-lg">{member.fullName}</h3>
+                        <p className="text-white/40 text-xs truncate font-medium mb-2">{member.email}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/10`}>
+                            {member.role}
+                          </span>
+                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 text-white/50 border border-white/5 flex items-center gap-1">
+                            <TypeIcon className="w-2.5 h-2.5" />
+                            {USER_TYPE_LABELS[member.userType] || member.userType}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-[11px] text-white/30 font-medium relative z-10">
+                      <span>Joined {new Date(member.createdAt).toLocaleDateString()}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${member.isActive ? 'bg-green-500 animate-pulse' : 'bg-white/20'}`} />
+                        {member.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Invite Instructions */}
@@ -118,13 +183,13 @@ function Team() {
           <div className="glass-card p-6 sm:p-8">
             <h3 className="text-lg sm:text-xl font-black text-premium mb-4 flex items-center gap-3">
               <Shield className="w-5 h-5 text-primary flex-shrink-0" />
-              Invitation System
+              Invitation & Add System
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {[
-                { step: '01', title: 'Send Invite', desc: 'Click "Invite Member", enter email and role, then generate an invitation link.' },
-                { step: '02', title: 'Share Link', desc: 'Copy and share the invite link with your team member via email or messaging.' },
-                { step: '03', title: 'Member Joins', desc: 'They click the link, set a password, and automatically join your workspace.' },
+                { step: '01', title: 'Add Directly', desc: 'Click "Add Team Member", enter name, email, role, and set a password directly.' },
+                { step: '02', title: 'Quick Login', desc: 'Once added, the team member can immediately log in using their email and set password.' },
+                { step: '03', title: 'Workspace Access', desc: 'They get instant access to the organization boards, stages, sprints, and tasks.' },
               ].map(({ step, title, desc }) => (
                 <div key={step} className="glass p-6 rounded-xl border border-white/5">
                   <div className="text-3xl sm:text-4xl font-black text-primary/20 mb-3">{step}</div>
@@ -149,8 +214,8 @@ function Team() {
             >
               <div className="px-6 sm:px-8 py-5 border-b border-white/5 flex items-center justify-between flex-shrink-0">
                 <div>
-                  <h3 className="text-xl sm:text-2xl font-black text-premium">Invite Team Member</h3>
-                  <p className="text-white/40 text-xs sm:text-sm">Generate an invitation link for your team</p>
+                  <h3 className="text-xl sm:text-2xl font-black text-premium">Add Team Member</h3>
+                  <p className="text-white/40 text-xs sm:text-sm">Create a new user profile for your team</p>
                 </div>
                 <button onClick={() => setShowInvite(false)} className="p-2 glass rounded-lg hover:bg-white/10 text-white/20 hover:text-white flex-shrink-0">
                   <X className="w-5 h-5" />
@@ -158,7 +223,22 @@ function Team() {
               </div>
 
               <form onSubmit={handleInvite} className="flex flex-col flex-1 overflow-hidden">
-                <div className="p-6 sm:p-8 space-y-6 overflow-y-auto no-scrollbar flex-1">
+                <div className="p-6 sm:p-8 space-y-5 overflow-y-auto no-scrollbar flex-1">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Full Name</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 flex-shrink-0" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="John Doe"
+                        className="glass-input w-full h-12 pl-11 text-sm font-medium"
+                        value={inviteForm.fullName}
+                        onChange={(e) => setInviteForm({ ...inviteForm, fullName: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Email Address</label>
                     <div className="relative">
@@ -170,6 +250,21 @@ function Team() {
                         className="glass-input w-full h-12 pl-11 text-sm font-medium"
                         value={inviteForm.email}
                         onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Password</label>
+                    <div className="relative">
+                      <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 flex-shrink-0" />
+                      <input
+                        type="password"
+                        required
+                        placeholder="•••••••• (Min 8 characters)"
+                        className="glass-input w-full h-12 pl-11 text-sm font-medium"
+                        value={inviteForm.password}
+                        onChange={(e) => setInviteForm({ ...inviteForm, password: e.target.value })}
                       />
                     </div>
                   </div>
@@ -224,7 +319,7 @@ function Team() {
                   </button>
                   <button type="submit" disabled={inviting}
                     className="flex-[2] h-12 sm:h-14 btn-primary-premium flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base">
-                    {inviting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin flex-shrink-0" /> : <><Mail className="w-4 h-4 flex-shrink-0" /> Generate Link</>}
+                    {inviting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin flex-shrink-0" /> : <><Plus className="w-4 h-4 flex-shrink-0" /> Add Member</>}
                   </button>
                 </div>
               </form>

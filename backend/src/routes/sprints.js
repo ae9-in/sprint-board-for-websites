@@ -28,7 +28,7 @@ router.get('/projects/:projectId/sprints', auth, async (req, res, next) => {
 });
 
 // POST /api/projects/:projectId/sprints - Create sprint
-router.post('/projects/:projectId/sprints', auth, async (req, res, next) => {
+router.post('/projects/:projectId/sprints', auth, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req, res, next) => {
   try {
     assertObjectId(req.params.projectId, 'Project ID');
 
@@ -75,7 +75,7 @@ router.post('/projects/:projectId/sprints', auth, async (req, res, next) => {
 });
 
 // POST /api/projects/:projectId/sprints/start - Start a sprint
-router.post('/projects/:projectId/sprints/start', auth, async (req, res, next) => {
+router.post('/projects/:projectId/sprints/start', auth, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req, res, next) => {
   try {
     assertObjectId(req.params.projectId, 'Project ID');
     const { sprintId } = req.body;
@@ -118,7 +118,7 @@ router.post('/projects/:projectId/sprints/start', auth, async (req, res, next) =
 });
 
 // POST /api/projects/:projectId/sprints/complete - Complete a sprint
-router.post('/projects/:projectId/sprints/complete', auth, async (req, res, next) => {
+router.post('/projects/:projectId/sprints/complete', auth, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req, res, next) => {
   try {
     assertObjectId(req.params.projectId, 'Project ID');
     const { sprintId } = req.body;

@@ -11,106 +11,15 @@ import { validate } from '../utils/validators.js';
 
 const router = express.Router();
 
-// POST /api/auth/signup - Create new organization and user
+// POST /api/auth/signup - Create new organization and user (DISABLED - public signup is disabled)
 router.post('/signup', async (req, res, next) => {
-  try {
-    const data = validate(z.object({
-      email: z.string().email(),
-      password: z.string().min(8),
-      fullName: z.string().min(2),
-      organizationName: z.string().min(2)
-    }), req.body);
-
-    // Generate organization slug
-    const slug = await Organization.generateSlug(data.organizationName);
-
-    // Create organization and user in transaction
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-      const [organization] = await Organization.create([{
-        name: data.organizationName,
-        slug,
-        ownerEmail: data.email,
-        plan: 'FREE',
-        isActive: true
-      }], { session });
-
-      const [user] = await User.create([{
-        organizationId: organization._id,
-        fullName: data.fullName,
-        email: data.email,
-        passwordHash: await hashPassword(data.password),
-        role: 'SUPER_ADMIN',
-        userType: 'DEVELOPER',
-        isActive: true,
-        inviteAccepted: true,
-        createdBy: null
-      }], { session });
-
-      // Link owner back to organization
-      organization.ownerId = user._id;
-      await organization.save({ session });
-
-      await session.commitTransaction();
-      session.endSession();
-
-      // Generate tokens
-      const accessToken = generateAccessToken(user);
-      const refreshToken = generateRefreshToken(user._id);
-
-      // Store refresh token
-      await RefreshToken.create({
-        userId: user._id,
-        organizationId: organization._id,
-        token: refreshToken,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-        expiresAt: getTokenExpiry('7d')
-      });
-
-      // Log activity
-      trackActivity({
-        organizationId: organization._id,
-        userId: user._id,
-        action: 'LOGIN',
-        entityType: 'User',
-        entityId: user._id,
-        description: 'User signed up',
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
-      });
-
-      res.status(201).json({
-        success: true,
-        data: {
-          accessToken,
-          refreshToken,
-          user: {
-            id: user._id,
-            fullName: user.fullName,
-            email: user.email,
-            role: user.role,
-            userType: user.userType
-          },
-          organization: {
-            id: organization._id,
-            name: organization.name,
-            slug: organization.slug,
-            plan: organization.plan
-          }
-        },
-        message: 'Signup successful'
-      });
-    } catch (err) {
-      await session.abortTransaction();
-      session.endSession();
-      throw err;
+  return res.status(403).json({
+    success: false,
+    error: {
+      code: 'SIGNUP_DISABLED',
+      message: 'Public self-registration is disabled. Please contact your system administrator to get an account invite.'
     }
-  } catch (error) {
-    next(error);
-  }
+  });
 });
 
 // POST /api/auth/login
@@ -301,15 +210,16 @@ router.post('/logout', auth, async (req, res, next) => {
       await RefreshToken.deleteOne({ token: refreshToken });
     }
 
-    // Log activity
-    await ActivityLog.create({
+    // Log activity (safe and non-blocking)
+    await trackActivity({
       organizationId: req.user.organizationId,
       userId: req.user.id,
       action: 'LOGOUT',
       entityType: 'User',
       entityId: req.user.id,
       description: 'User logged out',
-      createdBy: req.user.id
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
     });
 
     res.json({
@@ -409,8 +319,60 @@ router.post('/invite/send', auth, async (req, res, next) => {
     const data = validate(z.object({
       email: z.string().email(),
       role: z.enum(['SUPER_ADMIN', 'USER']),
-      userType: z.enum(['DEVELOPER', 'TESTER', 'UI_UX_DESIGNER', 'DEPLOYMENT_MANAGER', 'PROJECT_COORDINATOR'])
+      userType: z.enum(['DEVELOPER', 'TESTER', 'UI_UX_DESIGNER', 'DEPLOYMENT_MANAGER', 'PROJECT_COORDINATOR']),
+      fullName: z.string().min(2).optional(),
+      password: z.string().min(8).optional()
     }), req.body);
+
+    if (data.password && data.fullName) {
+      // Direct Add flow: Create user immediately
+      const existingUser = await User.findOne({ email: data.email.toLowerCase(), isDeleted: false });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'USER_EXISTS', message: 'A user with this email already exists' }
+        });
+      }
+
+      const user = await User.create({
+        organizationId: req.user.organizationId,
+        fullName: data.fullName,
+        email: data.email.toLowerCase(),
+        passwordHash: await hashPassword(data.password),
+        role: data.role,
+        userType: data.userType,
+        isActive: true,
+        invitedBy: req.user.id,
+        inviteAccepted: true,
+        createdBy: req.user.id
+      });
+
+      // Log activity (safe and non-blocking)
+      await trackActivity({
+        organizationId: req.user.organizationId,
+        userId: req.user.id,
+        action: 'USER_CREATED',
+        entityType: 'User',
+        entityId: user._id,
+        description: `Created team member ${user.fullName} (${user.email})`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: {
+          user: {
+            id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            role: user.role,
+            userType: user.userType
+          }
+        },
+        message: 'Team member added successfully'
+      });
+    }
 
     // Check for existing pending invite
     await InviteToken.deleteMany({
@@ -500,15 +462,16 @@ router.post('/invite/accept', async (req, res, next) => {
     // Get organization
     const organization = await Organization.findById(invite.organizationId);
 
-    // Log activity
-    await ActivityLog.create({
+    // Log activity (safe and non-blocking)
+    await trackActivity({
       organizationId: user.organizationId,
       userId: user._id,
       action: 'USER_JOINED',
       entityType: 'User',
       entityId: user._id,
       description: 'User joined via invitation',
-      createdBy: user._id
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
     });
 
     res.status(201).json({
@@ -609,6 +572,23 @@ router.delete('/sessions/:id', auth, async (req, res, next) => {
     res.json({
       success: true,
       message: 'Session revoked successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/auth/members - Get all organization members
+router.get('/members', auth, async (req, res, next) => {
+  try {
+    const users = await User.find({
+      organizationId: req.user.organizationId,
+      isDeleted: false
+    }).select('-passwordHash').sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: users
     });
   } catch (error) {
     next(error);

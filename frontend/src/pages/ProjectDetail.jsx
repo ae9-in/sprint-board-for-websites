@@ -28,6 +28,7 @@ import {
   ArrowUpRight,
   FileText,
   ShieldCheck,
+  Rocket,
   X
 } from 'lucide-react';
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -53,10 +54,174 @@ function ProjectDetail() {
     issuesBlockers: '',
     notes: ''
   });
+  const [showEditDeployment, setShowEditDeployment] = useState(false);
+  const [deploymentForm, setDeploymentForm] = useState({
+    gitLink: '',
+    vercelBackendLink: '',
+    vercelFrontendLink: '',
+    envDriveLink: '',
+    walkthroughVideoUrl: ''
+  });
+  const [orgMembers, setOrgMembers] = useState([]);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
+
+  // Link Upload & Workspace Feature States
+  const [files, setFiles] = useState([]);
+  const [showFileForm, setShowFileForm] = useState(false);
+  const [fileForm, setFileForm] = useState({ fileName: '', googleDriveLink: '', linkedEntityType: 'REQUIREMENT' });
+
+  const [testingReports, setTestingReports] = useState([]);
+  const [showTestingForm, setShowTestingForm] = useState(false);
+  const [testingForm, setTestingForm] = useState({ testCaseId: '', moduleTested: '', bugDescription: '', reproductionSteps: '', severity: 'MEDIUM', googleDriveLink: '' });
+
+  const [maintenanceLogs, setMaintenanceLogs] = useState([]);
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [maintenanceForm, setMaintenanceForm] = useState({ issueTitle: '', description: '', severity: 'MEDIUM', googleDriveLink: '' });
+
+  const [featureRequests, setFeatureRequests] = useState([]);
+  const [showFeatureForm, setShowFeatureForm] = useState(false);
+  const [featureForm, setFeatureForm] = useState({ title: '', description: '', googleDriveLink: '' });
+
+  const fetchFiles = async () => {
+    try {
+      const res = await api.get(`/projects/${id}/files`);
+      setFiles(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchTestingReports = async () => {
+    try {
+      const res = await api.get(`/projects/${id}/testing-reports`);
+      setTestingReports(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchMaintenanceLogs = async () => {
+    try {
+      const res = await api.get(`/projects/${id}/maintenance-logs`);
+      setMaintenanceLogs(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchFeatureRequests = async () => {
+    try {
+      const res = await api.get(`/projects/${id}/feature-requests`);
+      setFeatureRequests(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddFile = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post(`/projects/${id}/files`, fileForm);
+      setFiles(prev => [res.data.data, ...prev]);
+      setFileForm({ fileName: '', googleDriveLink: '', linkedEntityType: 'REQUIREMENT' });
+      setShowFileForm(false);
+      toast.success('Document uploaded successfully! 🚀');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to upload document');
+    }
+  };
+
+  const handleAddTestingReport = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post(`/projects/${id}/testing-reports`, testingForm);
+      setTestingReports(prev => [res.data.data, ...prev]);
+      setTestingForm({ testCaseId: '', moduleTested: '', bugDescription: '', reproductionSteps: '', severity: 'MEDIUM', googleDriveLink: '' });
+      setShowTestingForm(false);
+      toast.success('Testing report uploaded successfully! 🎯');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to upload testing report');
+    }
+  };
+
+  const handleAddMaintenanceLog = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post(`/projects/${id}/maintenance-logs`, maintenanceForm);
+      setMaintenanceLogs(prev => [res.data.data, ...prev]);
+      setMaintenanceForm({ issueTitle: '', description: '', severity: 'MEDIUM', googleDriveLink: '' });
+      setShowMaintenanceForm(false);
+      toast.success('Maintenance issue logged successfully! 🔧');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to log maintenance issue');
+    }
+  };
+
+  const handleResolveMaintenance = async (logId, currentStatus) => {
+    try {
+      const nextStatus = currentStatus === 'OPEN' ? 'RESOLVED' : 'CLOSED';
+      const res = await api.patch(`/projects/${id}/maintenance-logs/${logId}`, { status: nextStatus, resolutionNotes: 'Resolved by ' + user?.fullName });
+      setMaintenanceLogs(prev => prev.map(log => log._id === logId ? res.data.data : log));
+      toast.success(`Maintenance log marked as ${nextStatus}! 🎉`);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to update maintenance log');
+    }
+  };
+
+  const handleAddFeatureRequest = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post(`/projects/${id}/feature-requests`, featureForm);
+      setFeatureRequests(prev => [res.data.data, ...prev]);
+      setFeatureForm({ title: '', description: '', googleDriveLink: '' });
+      setShowFeatureForm(false);
+      toast.success('Feature enhancement request added successfully! 🚀');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to add feature request');
+    }
+  };
+
+  const fetchOrgMembers = async () => {
+    try {
+      const res = await api.get('/auth/members');
+      setOrgMembers(res.data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch organization members', err);
+    }
+  };
+
+  useEffect(() => {
+    if (showAddMember) {
+      fetchOrgMembers();
+      setSelectedMemberId('');
+      setNewMember({ name: '', email: '', userType: 'DEVELOPER' });
+    }
+  }, [showAddMember]);
 
   useEffect(() => {
     fetchProject();
   }, [id]);
+
+  useEffect(() => {
+    if (project) {
+      setDeploymentForm({
+        gitLink: project.gitLink || '',
+        vercelBackendLink: project.vercelBackendLink || '',
+        vercelFrontendLink: project.vercelFrontendLink || '',
+        envDriveLink: project.envDriveLink || '',
+        walkthroughVideoUrl: project.walkthroughVideoUrl || ''
+      });
+    }
+  }, [project]);
+
+  useEffect(() => {
+    if (project) {
+      if (activeTab === 'files') fetchFiles();
+      if (activeTab === 'testing') fetchTestingReports();
+      if (activeTab === 'maintenance') fetchMaintenanceLogs();
+      if (activeTab === 'features') fetchFeatureRequests();
+    }
+  }, [activeTab, id, project]);
 
   // Real-time synchronization
   useEffect(() => {
@@ -175,6 +340,18 @@ function ProjectDetail() {
     }
   };
 
+  const handleUpdateDeployment = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.patch(`/projects/${id}`, deploymentForm);
+      setProject(response.data.data);
+      setShowEditDeployment(false);
+      toast.success('Deployment details updated successfully! 🚀');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to update deployment details');
+    }
+  };
+
   if (loading) return <DetailSkeleton />;
   if (!project) return <NotFound />;
 
@@ -182,6 +359,7 @@ function ProjectDetail() {
     { id: 'overview', label: 'Overview', icon: Layout },
     { id: 'stages', label: 'Lifecycle', icon: Activity },
     { id: 'daily-log', label: 'Daily Logs', icon: Clock },
+    { id: 'files', label: 'Files & Docs', icon: FileText },
     { id: 'team', label: 'Team', icon: Users },
   ];
 
@@ -232,15 +410,9 @@ function ProjectDetail() {
         </div>
 
         {/* Tab Content */}
-        <AnimatePresence mode="wait">
+        <div>
           {activeTab === 'overview' && (
-            <motion.div
-              key="overview"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8"
-            >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 pb-12">
               <div className="lg:col-span-2 space-y-6 sm:space-y-8">
                 <div className="glass-card p-6 sm:p-8">
                   <h3 className="text-lg sm:text-xl font-bold text-premium mb-4 sm:mb-6 flex items-center gap-2">
@@ -283,6 +455,111 @@ function ProjectDetail() {
                     </div>
                   </div>
                 </div>
+
+                {/* Deployment Details Card */}
+                <div className="glass-card p-6 sm:p-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -z-10" />
+
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-premium flex items-center gap-2">
+                      <Rocket className="w-5 h-5 text-primary flex-shrink-0" /> Deployment & Environments
+                    </h3>
+                    {user?.role && (
+                      <button
+                        onClick={() => setShowEditDeployment(true)}
+                        className="text-xs font-bold text-primary hover:text-primary/80 hover:underline transition-all flex items-center gap-1"
+                      >
+                        Edit Details
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Repository Link</span>
+                        {project.gitLink ? (
+                          <a
+                            href={project.gitLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-bold text-primary hover:text-primary/80 hover:underline flex items-center gap-1.5 truncate"
+                          >
+                            GitHub Repository <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-sm text-white/30 italic">Not configured</span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Vercel Frontend Link</span>
+                        {project.vercelFrontendLink ? (
+                          <a
+                            href={project.vercelFrontendLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-bold text-primary hover:text-primary/80 hover:underline flex items-center gap-1.5 truncate"
+                          >
+                            Production Website <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-sm text-white/30 italic">Not configured</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Vercel Backend Link</span>
+                        {project.vercelBackendLink ? (
+                          <a
+                            href={project.vercelBackendLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-bold text-primary hover:text-primary/80 hover:underline flex items-center gap-1.5 truncate"
+                          >
+                            API Server / Backend <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-sm text-white/30 italic">Not configured</span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30">.env Google Drive Link</span>
+                        {project.envDriveLink ? (
+                          <a
+                            href={project.envDriveLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-bold text-primary hover:text-primary/80 hover:underline flex items-center gap-1.5 truncate"
+                          >
+                            Google Drive Configuration Folder <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-sm text-white/30 italic">Not configured</span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Walkthrough Video Link</span>
+                        {project.walkthroughVideoUrl ? (
+                          <a
+                            href={project.walkthroughVideoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-bold text-primary hover:text-primary/80 hover:underline flex items-center gap-1.5 truncate"
+                          >
+                            Watch Walkthrough Video <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-sm text-white/30 italic">Not configured</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-6 sm:space-y-8">
@@ -312,19 +589,14 @@ function ProjectDetail() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {activeTab === 'stages' && (
-            <motion.div
-              key="stages"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
-            >
+            <div className="space-y-4">
               {project.stages?.map((stage, index) => {
                 const isCurrent = project.currentStage === stage.stageType;
+                const isApprovedOrCompleted = ['APPROVED', 'COMPLETED'].includes(stage.status);
                 return (
                   <div 
                     key={stage._id}
@@ -334,9 +606,9 @@ function ProjectDetail() {
                   >
                     <div className="flex items-center gap-4 min-w-0 flex-1">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                        stage.status === 'COMPLETED' ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-white/20'
+                        isApprovedOrCompleted ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-white/20'
                       }`}>
-                        {stage.status === 'COMPLETED' ? <CheckCircle2 className="w-6 h-6 flex-shrink-0" /> : <Activity className="w-6 h-6 flex-shrink-0" />}
+                        {isApprovedOrCompleted ? <CheckCircle2 className="w-6 h-6 flex-shrink-0" /> : <Activity className="w-6 h-6 flex-shrink-0" />}
                       </div>
                       <div className="min-w-0 flex-1">
                         <h4 className="text-base sm:text-lg font-bold text-premium truncate">{formatStage(stage.stageType)}</h4>
@@ -352,7 +624,7 @@ function ProjectDetail() {
                         </div>
                       </div>
                     </div>
-                    {isCurrent && stage.status === 'IN_PROGRESS' && ['SUPER_ADMIN', 'ADMIN'].includes(user?.role) && (
+                    {!isApprovedOrCompleted && ['SUPER_ADMIN', 'ADMIN'].includes(user?.role) && (
                       <div className="flex gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
                         <button 
                           onClick={() => handleRejectStage(stage.stageType)}
@@ -371,17 +643,11 @@ function ProjectDetail() {
                   </div>
                 );
               })}
-            </motion.div>
+            </div>
           )}
 
           {activeTab === 'daily-log' && (
-            <motion.div
-              key="daily-log"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-6"
-            >
+            <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h3 className="text-xl sm:text-2xl font-black text-premium">Daily Performance Logs</h3>
                 <button 
@@ -426,17 +692,11 @@ function ProjectDetail() {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
           )}
 
           {activeTab === 'team' && (
-            <motion.div
-              key="team"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-6"
-            >
+            <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h3 className="text-xl sm:text-2xl font-black text-premium">Team Assembly</h3>
                 {['SUPER_ADMIN', 'ADMIN'].includes(user?.role) && (
@@ -467,9 +727,82 @@ function ProjectDetail() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+
+          {activeTab === 'files' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h3 className="text-xl sm:text-2xl font-black text-premium">Files & Documents</h3>
+                <button 
+                  onClick={() => setShowFileForm(!showFileForm)}
+                  className="btn-primary-premium flex items-center justify-center gap-2 w-full sm:w-auto py-3 sm:py-2.5 px-5"
+                >
+                  <Plus className="w-5 h-5 flex-shrink-0" /> {showFileForm ? 'Close Form' : 'Upload Document Link'}
+                </button>
+              </div>
+
+              {showFileForm && (
+                <form onSubmit={handleAddFile} className="glass-card p-6 space-y-4 max-w-xl">
+                  <h4 className="text-lg font-bold text-premium">Upload Document (Google Drive Link)</h4>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest">Document Title</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g., Requirement Specification Document"
+                      className="glass-input w-full h-11 text-sm font-semibold"
+                      value={fileForm.fileName}
+                      onChange={(e) => setFileForm({ ...fileForm, fileName: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest">Google Drive Link</label>
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://drive.google.com/..."
+                      className="glass-input w-full h-11 text-sm font-semibold"
+                      value={fileForm.googleDriveLink}
+                      onChange={(e) => setFileForm({ ...fileForm, googleDriveLink: e.target.value })}
+                    />
+                  </div>
+                  <button type="submit" className="btn-primary-premium w-full py-3 mt-2 text-sm">
+                    Submit Link
+                  </button>
+                </form>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {files.length > 0 ? files.map(file => (
+                  <div key={file._id} className="glass-card p-6 flex flex-col justify-between group">
+                    <div>
+                      <div className="flex items-start mb-4">
+                        <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 text-primary">
+                          <FileText className="w-6 h-6 flex-shrink-0" />
+                        </div>
+                      </div>
+                      <h4 className="text-lg font-bold text-premium truncate mb-1">{file.fileName}</h4>
+                      <p className="text-xs text-white/30 mb-4">Shared by {file.uploadedBy?.fullName || 'Team'}</p>
+                    </div>
+                    <a
+                      href={file.storageKey}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary-premium flex items-center justify-center gap-2 py-2.5 text-xs"
+                    >
+                      View Document Link <ArrowUpRight className="w-4 h-4" />
+                    </a>
+                  </div>
+                )) : (
+                  <div className="col-span-full glass-card p-12 text-center">
+                    <p className="text-white/40">No files or documents uploaded yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Daily Log Modal */}
@@ -583,44 +916,156 @@ function ProjectDetail() {
               <form onSubmit={handleAddMember} className="flex flex-col flex-1 overflow-hidden">
                 <div className="p-6 sm:p-8 space-y-6 overflow-y-auto no-scrollbar flex-1">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Name</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="e.g. Sarah Connor"
-                      className="glass-input w-full h-12 text-sm font-bold" 
-                      value={newMember.name} 
-                      onChange={(e) => setNewMember({...newMember, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Email</label>
-                    <input 
-                      type="email" 
-                      required 
-                      placeholder="sarah@company.com"
-                      className="glass-input w-full h-12 text-sm" 
-                      value={newMember.email} 
-                      onChange={(e) => setNewMember({...newMember, email: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Role Type</label>
-                    <select 
-                      className="glass-input w-full h-12 text-sm font-bold bg-no-repeat bg-[right_1rem_center]" 
-                      value={newMember.userType} 
-                      onChange={(e) => setNewMember({...newMember, userType: e.target.value})}
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Select Organization Member</label>
+                    <select
+                      className="glass-input w-full h-12 text-sm font-bold bg-no-repeat bg-[right_1rem_center] text-white"
+                      value={selectedMemberId}
+                      onChange={(e) => {
+                        const memberId = e.target.value;
+                        setSelectedMemberId(memberId);
+                        if (memberId === '') {
+                          setNewMember({ name: '', email: '', userType: 'DEVELOPER' });
+                        } else {
+                          const m = orgMembers.find(member => member._id === memberId);
+                          if (m) {
+                            setNewMember({ name: m.fullName, email: m.email, userType: m.userType || 'DEVELOPER' });
+                          }
+                        }
+                      }}
                     >
-                      <option value="DEVELOPER">Developer</option>
-                      <option value="TESTER">Tester</option>
-                      <option value="UI_UX_DESIGNER">UI/UX Designer</option>
-                      <option value="DEPLOYMENT_MANAGER">Deployment Manager</option>
-                      <option value="PROJECT_COORDINATOR">Project Coordinator</option>
+                      <option value="" className="bg-[#111827] text-white">-- Choose an existing team member --</option>
+                      {orgMembers.map(member => (
+                        <option key={member._id} value={member._id} className="bg-[#111827] text-white">
+                          {member.fullName} ({member.email})
+                        </option>
+                      ))}
                     </select>
                   </div>
+
+                  {selectedMemberId && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass p-5 rounded-xl space-y-3 border border-primary/20 bg-primary/5"
+                    >
+                      <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Ready to Assign</div>
+                      <div className="space-y-1">
+                        <div className="text-lg font-black text-premium">{newMember.name}</div>
+                        <div className="text-sm text-white/60 font-medium">{newMember.email}</div>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 w-fit text-premium uppercase tracking-widest">
+                        Role: {newMember.userType}
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
                 <div className="px-6 sm:px-8 py-5 border-t border-white/5 bg-[#111827]/50 flex-shrink-0">
-                  <button type="submit" className="w-full h-12 sm:h-14 btn-primary-premium text-sm sm:text-base">Add to Project</button>
+                  <button 
+                    type="submit" 
+                    className="w-full h-12 sm:h-14 btn-primary-premium text-sm sm:text-base flex items-center justify-center gap-2"
+                    disabled={!selectedMemberId}
+                  >
+                    Add Member to Project
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Deployment Details Modal */}
+      <AnimatePresence>
+        {showEditDeployment && (
+          <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-card w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_100px_rgba(37,99,235,0.1)] border border-white/10"
+            >
+              <div className="px-6 sm:px-8 py-5 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-black text-premium">Edit Deployment Details</h3>
+                  <p className="text-white/40 text-xs sm:text-sm font-medium">Update repository and build environment specifications</p>
+                </div>
+                <button onClick={() => setShowEditDeployment(false)} className="p-2 glass rounded-lg hover:bg-white/10 text-white/20 hover:text-white transition-all flex-shrink-0">
+                  <X className="w-5 h-5 flex-shrink-0" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdateDeployment} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-6 sm:p-8 space-y-6 overflow-y-auto no-scrollbar flex-1">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Git Repository Link</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., https://github.com/org/repo"
+                      className="glass-input w-full h-12 text-sm font-semibold"
+                      value={deploymentForm.gitLink}
+                      onChange={(e) => setDeploymentForm({ ...deploymentForm, gitLink: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Vercel Frontend Link (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., https://app.vercel.app"
+                      className="glass-input w-full h-12 text-sm font-semibold"
+                      value={deploymentForm.vercelFrontendLink}
+                      onChange={(e) => setDeploymentForm({ ...deploymentForm, vercelFrontendLink: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Vercel Backend Link (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., https://api.vercel.app"
+                      className="glass-input w-full h-12 text-sm font-semibold"
+                      value={deploymentForm.vercelBackendLink}
+                      onChange={(e) => setDeploymentForm({ ...deploymentForm, vercelBackendLink: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">.env Google Drive Link (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., https://drive.google.com/..."
+                      className="glass-input w-full h-12 text-sm font-semibold"
+                      value={deploymentForm.envDriveLink}
+                      onChange={(e) => setDeploymentForm({ ...deploymentForm, envDriveLink: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1">Walkthrough Video Link (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., https://drive.google.com/file/d/... or YouTube link"
+                      className="glass-input w-full h-12 text-sm font-semibold"
+                      value={deploymentForm.walkthroughVideoUrl}
+                      onChange={(e) => setDeploymentForm({ ...deploymentForm, walkthroughVideoUrl: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="px-6 sm:px-8 py-5 border-t border-white/5 flex gap-4 bg-[#111827]/50 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditDeployment(false)}
+                    className="flex-1 h-12 rounded-xl font-bold text-white/50 hover:bg-white/5 transition-all text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-[2] h-12 btn-primary-premium flex items-center justify-center gap-2 text-sm"
+                  >
+                    Save Changes
+                  </button>
                 </div>
               </form>
             </motion.div>

@@ -295,7 +295,11 @@ function Dashboard() {
               />
             )) : (
               <div className="col-span-full glass-card p-12 text-center">
-                <p className="text-white/40">No projects found. Create one to get started!</p>
+                <p className="text-white/40">
+                  {['SUPER_ADMIN', 'ADMIN'].includes(user?.role) 
+                    ? "No projects found. Create one to get started!" 
+                    : "No projects found. Contact your administrator to get assigned to a project."}
+                </p>
               </div>
             )}
           </div>

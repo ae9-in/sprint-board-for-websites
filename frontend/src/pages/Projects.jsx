@@ -109,7 +109,7 @@ function Projects() {
             <button className="glass p-3 rounded-xl hover:bg-white/10 transition-all text-white/40 hover:text-white flex-shrink-0">
               <Filter className="w-5 h-5" />
             </button>
-            {user?.role === 'SUPER_ADMIN' && (
+            {['SUPER_ADMIN', 'ADMIN'].includes(user?.role) && (
               <button
                 onClick={() => setShowCreate(true)}
                 className="btn-primary-premium flex items-center gap-2 px-4 sm:px-5 py-3 flex-shrink-0 text-sm sm:text-base"
@@ -131,7 +131,11 @@ function Projects() {
               <Briefcase className="w-10 h-10 text-white/20" />
             </div>
             <h3 className="text-xl font-bold text-premium mb-2">No projects found</h3>
-            <p className="text-white/40 max-w-xs mx-auto text-sm sm:text-base">Try adjusting your search or create a new project to get started.</p>
+            <p className="text-white/40 max-w-xs mx-auto text-sm sm:text-base">
+              {['SUPER_ADMIN', 'ADMIN'].includes(user?.role) 
+                ? "Try adjusting your search or create a new project to get started." 
+                : "Try adjusting your search or contact your administrator to get assigned to a project."}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

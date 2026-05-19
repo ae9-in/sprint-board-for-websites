@@ -25,6 +25,10 @@ export const notificationQueue = new Queue('notifications', {
 });
 
 
-export const addNotificationJob = (data) => {
-  return notificationQueue.add('send-notification', data);
+export const addNotificationJob = async (data) => {
+  try {
+    await notificationQueue.add('send-notification', data);
+  } catch (err) {
+    console.error('Failed to add job to notification queue (Redis may be offline):', err);
+  }
 };
