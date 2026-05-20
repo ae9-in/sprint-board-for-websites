@@ -1,0 +1,96 @@
+<USER_REQUEST>
+
+name-shikhar
+	"hire perfect- done
+ acutus- done
+,Shopsmart -done
+,JJR- done
+Millets PRO -done
+,SRR -done
+crezco -done
+ atlasia workbook,-done
+khatha book(shop ledger) -done-not deployed
+candidate reuse MS - done
+earnify- Done 
+project management system-done
+Your Growth - Done
+Linekdin data scraper - deployment pending
+EtiquetteLMS - Done"	"hire perfect - https://www.hireperfect.in/
+ acutus - https://auctus-community.vercel.app/
+,Shopsmart - https://shopsmart-hazel.vercel.app/ 
+,JJR - https://jayajanardhana-prod.vercel.app/
+Millets PRO - https://www.milletpro.in/
+,SRR - https://srr-pooja-works.vercel.app/
+crezco - https://crezco.vercel.app/
+ atlasia workbook - https://atlasia-portal-frontend.vercel.app/ 
+khatha book(shop ledger) -done-not deployed
+candidate reuse MS - https://candidate-reuse-ms.vercel.app/
+earnify- Done 
+project management system - https://earnify-one.vercel.app/
+Your Growth - https://best-version-five.vercel.app/
+Linekdin data scraper - deployment pending
+EtiquetteLMS - https://etiquettes.in/"	"hire perfect- yes
+ acutus- yes
+,Shopsmart -yes
+,JJR- yes
+Millets PRO - yes
+,SRR -yes
+crezco - yes
+ atlasia workbook,-yes
+khatha book(shop ledger) - yes
+candidate reuse MS - No
+earnify- No 
+project management system - No
+Your Growth - No
+Linekdin data scraper - No
+EtiquetteLMS - Yes"	vercel	render	"SoulMassive,
+  email: shikhar5775@gmail.com,
+ shopssmart - https://github.com/SoulMassive/shopsmart [ Personal] ,
+ crezco - https://github.com/SoulMassive/crezco [ Personal ]"	"SoulMassive,
+  email: shikhar5775@gmail.com"	not in one deployement	"hireperfect is deployed in his account 
+auctus is in oldversion,
+ JJR - catalog is not showing up it is going blank 
+ 
+"	"hire perfect - https://www.hireperfect.in/
+ acutus - https://auctus-community.vercel.app/
+,Shopsmart - https://shopsmart-hazel.vercel.app/ 
+,JJR - https://jayajanardhana-prod.vercel.app/
+Millets PRO - https://www.milletpro.in/
+,SRR - https://srr-pooja-works.vercel.app/
+crezco - https://crezco.vercel.app/
+ atlasia workbook - https://atl
+<truncated 4934 bytes>
+reimbursement-prod"	"maid booking(not push to git hub)
+,ace it up(yes), 
+H&W(yes)
+reimbursment (yes)"	vercel	render	not deployed	not deployed	not deployed		"https://reimbursement-prod.vercel.app/
+https://health-and-wellness-prod.vercel.app/
+https://bootcamp-prod.vercel.app/         "	"h & t - postgres SQL
+reimbursement - mongodb
+ace it up - mongodb
+bootcamp online - mongodb"	personal account 
+name-shilpa
+	"intern OS-pending
+refrendraa-deployed-not pushed to git
+alumnix-deployed-not pushed to git"		no	vercel	render	"adice24, 
+email: shilpak2k23@gmail.com"	"adice24,
+ email:shilpak2k23@gmail.com"	not in 1 deployement		"https://refrendraa.vercel.app
+https://alumnix-ktah.onrender.com"	"intern os - supabase
+refrendraa - supabase
+alumnix - mongodb"	personal account 
+name-fazil	
+" BDE Tracker App (Android Users)
+ BDE Tracker Website (iOS Users)
+ Admin Panel for BDE Tracker Website
+OCC App (Ongoing Work)"	" BDE Tracker Website: https://github.com/ae9-in/bdetracker
+ Admin Panel: https://github.com/fieldtrackeradmin/field-tracker-admin05"	yes 	Not deployed (shared as ZIP file)	Supabase (account has been shared)	https://github.com/ae9-in/bdetracke	Supabase (shared company account)					
+name-varshith
+	"akshara info
+invoice generateor
+"	https://github.com/saivarshithmaddala-sudo/invoiveg		vercel	vercel 	"saivarshithmaddala-9169
+email- Saivarshithmaddala@gmail.com"	"saivarshithmaddala-9169
+email- Saivarshithmaddala@gmail.com"	one deployement-vercel- varshith		invoiveg-ik5n.vercel.app	invoice generator - mongodb	personal account  these are deployment detaiels and take all the details and take what u whant can keep it in there extra deatls not need what detaiels u have update give as per the project input method done created any new once and create different project and name ignore the thing and create project and input deployment detaiels their keep and extra details igone do this thing without braking any thing 
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-05-20T12:40:20+05:30.
+</ADDITIONAL_METADATA>
