@@ -403,7 +403,7 @@ const projectsData = [
     developerName: 'jeevan',
     developerEmail: 'jeevankonduru2002@gmail.com',
     name: 'ATS',
-    clientName: 'jeevan',
+    clientName: 'jishnu',
     description: 'ATS application. Database: Neon Postgres DB. File storage: Cloudinary.',
     gitLink: 'https://github.com/ae9-in/ATS-prod',
     vercelFrontendLink: 'https://atsprodfrontend.vercel.app/',
