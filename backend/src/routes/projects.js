@@ -212,12 +212,20 @@ router.post('/', auth, requireRole(['SUPER_ADMIN', 'ADMIN']), async (req, res, n
       isDeleted: false
     }).lean();
 
+    const projectData = {
+      ...createdProject.toObject(),
+      stages: createdStages
+    };
+
+    try {
+      emitToOrg(req.user.organizationId, 'project-created', projectData);
+    } catch (socketErr) {
+      console.error('Failed to emit project-created event to org:', socketErr);
+    }
+
     res.status(201).json({
       success: true,
-      data: {
-        ...createdProject.toObject(),
-        stages: createdStages
-      },
+      data: projectData,
       message: 'Project created successfully'
     });
   } catch (error) {
@@ -304,6 +312,11 @@ router.patch('/:id', auth, async (req, res, next) => {
 
     // Real-time update
     getIO().to(`project:${project._id}`).emit('project-updated', project);
+    try {
+      emitToOrg(req.user.organizationId, 'project-updated', project);
+    } catch (socketErr) {
+      console.error('Failed to emit project-updated event to org:', socketErr);
+    }
 
     res.json({
       success: true,
@@ -369,6 +382,11 @@ router.post('/:id/members', auth, async (req, res, next) => {
       .lean();
 
     getIO().to(`project:${project._id}`).emit('project-updated', updatedProject);
+    try {
+      emitToOrg(req.user.organizationId, 'project-updated', updatedProject);
+    } catch (socketErr) {
+      console.error('Failed to emit project-updated event to org:', socketErr);
+    }
 
     res.json({
       success: true,
@@ -520,6 +538,12 @@ router.post('/:projectId/stages/:stageType/approve', auth, async (req, res, next
       }
       getIO().to(`project:${project._id}`).emit('project-updated', project);
       getIO().to(`project:${project._id}`).emit('stage-updated', { stage });
+      try {
+        emitToOrg(req.user.organizationId, 'project-updated', project);
+        emitToOrg(req.user.organizationId, 'stage-updated', { stage });
+      } catch (socketErr) {
+        console.error('Failed to emit stage approval events to org:', socketErr);
+      }
     } catch (bgError) {
       console.error('Non-critical background operations failed during stage approval:', bgError);
     }
@@ -609,6 +633,12 @@ router.post('/:projectId/stages/:stageType/reject', auth, async (req, res, next)
     // Real-time update
     getIO().to(`project:${project._id}`).emit('project-updated', project);
     getIO().to(`project:${project._id}`).emit('stage-updated', { stage });
+    try {
+      emitToOrg(req.user.organizationId, 'project-updated', project);
+      emitToOrg(req.user.organizationId, 'stage-updated', { stage });
+    } catch (socketErr) {
+      console.error('Failed to emit stage rejection events to org:', socketErr);
+    }
 
     res.json({
       success: true,
@@ -674,6 +704,8 @@ router.post('/:projectId/stages/:stageType/request-changes', auth, async (req, r
     try {
       getIO().to(`project:${project._id}`).emit('project-updated', project);
       getIO().to(`project:${project._id}`).emit('stage-updated', { stage });
+      emitToOrg(req.user.organizationId, 'project-updated', project);
+      emitToOrg(req.user.organizationId, 'stage-updated', { stage });
     } catch (bgError) {
       console.error('Non-critical background operations failed during stage request-changes:', bgError);
     }

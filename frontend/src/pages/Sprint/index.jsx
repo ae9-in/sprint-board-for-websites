@@ -5,10 +5,12 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Layers, Plus, Calendar, Target, X, ChevronRight, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
+import { useSocket } from '../../contexts/SocketContext';
 
 function SprintsPage() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const socket = useSocket();
 
   useEffect(() => {
     fetchProjects();
@@ -16,7 +18,7 @@ function SprintsPage() {
 
   const fetchProjects = async () => {
     try {
-      const res = await api.get('/projects?limit=50');
+      const res = await api.get('/projects?limit=1000');
       setProjects(res.data.data || []);
     } catch (err) {
       console.error(err);
@@ -24,6 +26,22 @@ function SprintsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('project-created', fetchProjects);
+      socket.on('project-updated', fetchProjects);
+      socket.on('project-deleted', fetchProjects);
+      socket.on('stage-updated', fetchProjects);
+
+      return () => {
+        socket.off('project-created', fetchProjects);
+        socket.off('project-updated', fetchProjects);
+        socket.off('project-deleted', fetchProjects);
+        socket.off('stage-updated', fetchProjects);
+      };
+    }
+  }, [socket]);
 
   return (
     <DashboardLayout>

@@ -40,13 +40,17 @@ function Projects() {
       };
 
       socket.on('activity-created', handleActivity);
+      socket.on('project-created', handleActivity);
       socket.on('project-updated', handleActivity);
       socket.on('project-deleted', handleActivity);
+      socket.on('stage-updated', handleActivity);
 
       return () => {
         socket.off('activity-created', handleActivity);
+        socket.off('project-created', handleActivity);
         socket.off('project-updated', handleActivity);
         socket.off('project-deleted', handleActivity);
+        socket.off('stage-updated', handleActivity);
       };
     }
   }, [socket, queryClient]);
