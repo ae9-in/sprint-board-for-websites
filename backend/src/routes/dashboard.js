@@ -18,7 +18,7 @@ router.get('/admin', auth, async (req, res, next) => {
 
     // Consolidated aggregation for better performance
     const stats = await Project.aggregate([
-      { $match: { organizationId: orgId, isDeleted: false, status: 'ACTIVE' } },
+      { $match: { organizationId: orgId, isDeleted: false } },
       {
         $facet: {
           totalProjects: [{ $count: 'count' }],
@@ -26,11 +26,11 @@ router.get('/admin', auth, async (req, res, next) => {
             { $group: { _id: '$currentStage', count: { $sum: 1 } } }
           ],
           delayedProjects: [
-            { $match: { deadline: { $lt: new Date() } } },
+            { $match: { status: 'ACTIVE', deadline: { $lt: new Date() } } },
             { $count: 'count' }
           ],
           expectedLogs: [
-            { $match: { currentStage: 'DEVELOPMENT' } },
+            { $match: { status: 'ACTIVE', currentStage: 'DEVELOPMENT' } },
             { $project: { userCount: { $size: { $ifNull: ['$assignedUserIds', []] } } } },
             { $group: { _id: null, total: { $sum: '$userCount' } } }
           ]
