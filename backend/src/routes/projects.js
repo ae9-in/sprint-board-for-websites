@@ -8,7 +8,7 @@ import { requireRole } from '../middleware/rbac.js';
 import { orgQuery, assertObjectId } from '../middleware/orgScope.js';
 import { validate } from '../utils/validators.js';
 import { paginate, buildPaginationMeta } from '../utils/pagination.js';
-import { getIO } from '../utils/socket.js';
+import { getIO, emitToOrg } from '../utils/socket.js';
 import { addNotificationJob } from '../queues/notificationQueue.js';
 
 const router = express.Router();
@@ -412,6 +412,8 @@ router.delete('/:id', auth, async (req, res, next) => {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent']
     });
+
+    emitToOrg(req.user.organizationId, 'project-deleted', { projectId: project._id });
 
     res.json({
       success: true,

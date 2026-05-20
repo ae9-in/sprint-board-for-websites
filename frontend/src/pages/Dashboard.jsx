@@ -69,6 +69,7 @@ function Dashboard() {
         // Optimistically update dashboard stats and activity feed
         queryClient.setQueryData(['dashboard-stats', user?.role], (old) => {
           if (!old) return old;
+          if (!newActivity || !newActivity.action) return old;
           return {
             ...old,
             recentActivity: [newActivity, ...(old.recentActivity || [])].slice(0, 10)
@@ -81,9 +82,23 @@ function Dashboard() {
       };
 
       socket.on('activity-created', handleActivity);
+      socket.on('project-created', handleActivity);
+      socket.on('project-updated', handleActivity);
+      socket.on('project-deleted', handleActivity);
+      socket.on('stage-updated', handleActivity);
+      socket.on('task-created', handleActivity);
+      socket.on('task-updated', handleActivity);
+      socket.on('task-deleted', handleActivity);
 
       return () => {
         socket.off('activity-created', handleActivity);
+        socket.off('project-created', handleActivity);
+        socket.off('project-updated', handleActivity);
+        socket.off('project-deleted', handleActivity);
+        socket.off('stage-updated', handleActivity);
+        socket.off('task-created', handleActivity);
+        socket.off('task-updated', handleActivity);
+        socket.off('task-deleted', handleActivity);
       };
     }
   }, [socket, user?.role, queryClient]);

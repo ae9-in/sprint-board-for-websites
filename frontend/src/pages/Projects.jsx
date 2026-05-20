@@ -41,13 +41,16 @@ function Projects() {
 
       socket.on('activity-created', handleActivity);
       socket.on('project-updated', handleActivity);
+      socket.on('project-deleted', handleActivity);
 
       return () => {
         socket.off('activity-created', handleActivity);
         socket.off('project-updated', handleActivity);
+        socket.off('project-deleted', handleActivity);
       };
     }
   }, [socket, queryClient]);
+
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showCreate, setShowCreate] = useState(searchParams.get('new') === 'true');
@@ -74,7 +77,7 @@ function Projects() {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (debouncedSearch) params.append('search', debouncedSearch);
-      params.append('limit', '50');
+      params.append('limit', '1000');
       const response = await api.get(`/projects?${params}`);
       return response.data.data || [];
     },
@@ -117,7 +120,10 @@ function Projects() {
               <Briefcase className="w-4 h-4 text-primary" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Workspaces</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-premium tracking-tight">Projects</h1>
+             <h1 className="text-3xl sm:text-4xl font-black text-premium tracking-tight flex items-baseline gap-3">
+              Projects
+              <span className="text-lg font-bold text-white/30 font-sans">({projects.length})</span>
+            </h1>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
