@@ -65,9 +65,16 @@ function SprintBoard() {
         queryClient.setQueryData(['tasks', projectId], (old) => [newTask, ...(old || [])]);
       });
 
+      socket.on('task-deleted', (deletedTaskId) => {
+        queryClient.setQueryData(['tasks', projectId], (old) => 
+          old?.filter(t => t._id !== deletedTaskId)
+        );
+      });
+
       return () => {
         socket.off('task-updated');
         socket.off('task-created');
+        socket.off('task-deleted');
       };
     }
   }, [socket, projectId, queryClient]);

@@ -65,7 +65,7 @@ function Dashboard() {
   // Real-time synchronization
   useEffect(() => {
     if (socket) {
-      socket.on('activity-created', (newActivity) => {
+      const handleActivity = (newActivity) => {
         // Optimistically update dashboard stats and activity feed
         queryClient.setQueryData(['dashboard-stats', user?.role], (old) => {
           if (!old) return old;
@@ -74,10 +74,16 @@ function Dashboard() {
             recentActivity: [newActivity, ...(old.recentActivity || [])].slice(0, 10)
           };
         });
-      });
+
+        // Invalidate queries to fetch real-time updated numbers and projects
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+        queryClient.invalidateQueries({ queryKey: ['recent-projects'] });
+      };
+
+      socket.on('activity-created', handleActivity);
 
       return () => {
-        socket.off('activity-created');
+        socket.off('activity-created', handleActivity);
       };
     }
   }, [socket, user?.role, queryClient]);

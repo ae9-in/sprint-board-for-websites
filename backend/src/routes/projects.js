@@ -517,6 +517,7 @@ router.post('/:projectId/stages/:stageType/approve', auth, async (req, res, next
         });
       }
       getIO().to(`project:${project._id}`).emit('project-updated', project);
+      getIO().to(`project:${project._id}`).emit('stage-updated', { stage });
     } catch (bgError) {
       console.error('Non-critical background operations failed during stage approval:', bgError);
     }
@@ -605,6 +606,7 @@ router.post('/:projectId/stages/:stageType/reject', auth, async (req, res, next)
 
     // Real-time update
     getIO().to(`project:${project._id}`).emit('project-updated', project);
+    getIO().to(`project:${project._id}`).emit('stage-updated', { stage });
 
     res.json({
       success: true,
@@ -664,6 +666,14 @@ router.post('/:projectId/stages/:stageType/request-changes', auth, async (req, r
       try {
         push(userId.toString(), notification);
       } catch (e) {}
+    }
+
+    // Real-time update
+    try {
+      getIO().to(`project:${project._id}`).emit('project-updated', project);
+      getIO().to(`project:${project._id}`).emit('stage-updated', { stage });
+    } catch (bgError) {
+      console.error('Non-critical background operations failed during stage request-changes:', bgError);
     }
 
     res.json({

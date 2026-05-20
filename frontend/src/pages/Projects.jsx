@@ -17,6 +17,7 @@ import {
   X
 } from 'lucide-react';
 import DashboardLayout from '../layouts/DashboardLayout';
+import { useSocket } from '../contexts/SocketContext';
 import {
   formatStage,
   formatStatus,
@@ -28,7 +29,25 @@ import {
 function Projects() {
   const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
+  const socket = useSocket();
   const queryClient = useQueryClient();
+
+  // Real-time synchronization for projects list
+  useEffect(() => {
+    if (socket) {
+      const handleActivity = () => {
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+      };
+
+      socket.on('activity-created', handleActivity);
+      socket.on('project-updated', handleActivity);
+
+      return () => {
+        socket.off('activity-created', handleActivity);
+        socket.off('project-updated', handleActivity);
+      };
+    }
+  }, [socket, queryClient]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showCreate, setShowCreate] = useState(searchParams.get('new') === 'true');

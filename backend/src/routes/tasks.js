@@ -99,6 +99,7 @@ router.post('/projects/:projectId/tasks', auth, requireRole(['SUPER_ADMIN', 'ADM
 
     // Socket emission
     emitToProject(req.params.projectId, 'task-created', task);
+    emitToOrg(req.user.organizationId, 'task-created', task);
 
     res.status(201).json({
       success: true,
@@ -144,6 +145,7 @@ router.patch('/projects/:projectId/tasks/:id', auth, requireRole(['SUPER_ADMIN',
 
     // Socket emission
     emitToProject(req.params.projectId, 'task-updated', task);
+    emitToOrg(req.user.organizationId, 'task-updated', task);
 
     res.json({
       success: true,
@@ -202,6 +204,7 @@ router.patch('/projects/:projectId/tasks/:id/status', auth, requireRole(['SUPER_
 
     // Socket emission
     emitToProject(req.params.projectId, 'task-updated', task);
+    emitToOrg(req.user.organizationId, 'task-updated', task);
 
     res.json({
       success: true,
@@ -233,6 +236,7 @@ router.delete('/projects/:projectId/tasks/:id', auth, requireRole(['SUPER_ADMIN'
 
     // Socket emission
     emitToProject(req.params.projectId, 'task-deleted', task._id);
+    emitToOrg(req.user.organizationId, 'task-deleted', task._id);
 
     res.json({
       success: true,
