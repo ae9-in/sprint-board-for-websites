@@ -15,9 +15,21 @@ export const useSocketStore = create((set, get) => ({
     const { socket: existingSocket } = get();
     if (existingSocket?.connected) return;
 
+    const isVercel = typeof window !== 'undefined' && (
+      window.location.hostname.includes('vercel.app') || 
+      SOCKET_URL.includes('vercel.app')
+    );
+
+    if (isVercel) {
+      console.warn('⚠️ Serverless environment detected (Vercel). Real-time Sync (socketStore) disabled.');
+      return;
+    }
+
     const socket = io(SOCKET_URL, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
+      reconnectionAttempts: 3, // Prevent infinite reconnection loops
+      reconnectionDelay: 5000,
     });
 
     socket.on('connect', () => {

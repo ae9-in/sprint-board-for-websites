@@ -8,7 +8,7 @@ import { requireRole } from '../middleware/rbac.js';
 import { orgQuery, assertObjectId } from '../middleware/orgScope.js';
 import { validate } from '../utils/validators.js';
 import { paginate, buildPaginationMeta } from '../utils/pagination.js';
-import { getIO, emitToOrg } from '../utils/socket.js';
+import { emitToProject, emitToOrg } from '../utils/socket.js';
 import { addNotificationJob } from '../queues/notificationQueue.js';
 
 const router = express.Router();
@@ -311,7 +311,7 @@ router.patch('/:id', auth, async (req, res, next) => {
     });
 
     // Real-time update
-    getIO().to(`project:${project._id}`).emit('project-updated', project);
+    emitToProject(project._id, 'project-updated', project);
     try {
       emitToOrg(req.user.organizationId, 'project-updated', project);
     } catch (socketErr) {
@@ -381,7 +381,7 @@ router.post('/:id/members', auth, async (req, res, next) => {
       .populate('createdBy', 'fullName email')
       .lean();
 
-    getIO().to(`project:${project._id}`).emit('project-updated', updatedProject);
+    emitToProject(project._id, 'project-updated', updatedProject);
     try {
       emitToOrg(req.user.organizationId, 'project-updated', updatedProject);
     } catch (socketErr) {
@@ -536,8 +536,8 @@ router.post('/:projectId/stages/:stageType/approve', auth, async (req, res, next
           link: `/projects/${project._id}`
         });
       }
-      getIO().to(`project:${project._id}`).emit('project-updated', project);
-      getIO().to(`project:${project._id}`).emit('stage-updated', { stage });
+      emitToProject(project._id, 'project-updated', project);
+      emitToProject(project._id, 'stage-updated', { stage });
       try {
         emitToOrg(req.user.organizationId, 'project-updated', project);
         emitToOrg(req.user.organizationId, 'stage-updated', { stage });
@@ -631,8 +631,8 @@ router.post('/:projectId/stages/:stageType/reject', auth, async (req, res, next)
     });
 
     // Real-time update
-    getIO().to(`project:${project._id}`).emit('project-updated', project);
-    getIO().to(`project:${project._id}`).emit('stage-updated', { stage });
+    emitToProject(project._id, 'project-updated', project);
+    emitToProject(project._id, 'stage-updated', { stage });
     try {
       emitToOrg(req.user.organizationId, 'project-updated', project);
       emitToOrg(req.user.organizationId, 'stage-updated', { stage });
@@ -702,8 +702,8 @@ router.post('/:projectId/stages/:stageType/request-changes', auth, async (req, r
 
     // Real-time update
     try {
-      getIO().to(`project:${project._id}`).emit('project-updated', project);
-      getIO().to(`project:${project._id}`).emit('stage-updated', { stage });
+      emitToProject(project._id, 'project-updated', project);
+      emitToProject(project._id, 'stage-updated', { stage });
       emitToOrg(req.user.organizationId, 'project-updated', project);
       emitToOrg(req.user.organizationId, 'stage-updated', { stage });
     } catch (bgError) {

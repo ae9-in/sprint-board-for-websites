@@ -48,7 +48,13 @@ export const initSocket = (server) => {
 
 export const getIO = () => {
   if (!io) {
-    throw new Error('Socket.io not initialized');
+    // Return a dummy object with chainable methods to prevent crashes in serverless/offline environments
+    return {
+      to: () => ({
+        emit: () => {}
+      }),
+      emit: () => {}
+    };
   }
   return io;
 };
