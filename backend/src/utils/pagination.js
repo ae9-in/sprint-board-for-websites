@@ -4,13 +4,18 @@ export async function paginate(model, query, options = {}) {
   const skip = (page - 1) * limit;
   const sort = options.sort || { createdAt: -1 };
 
+  let dbQuery = model.find(query)
+    .select(options.select || '')
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+
+  if (options.populate) {
+    dbQuery = dbQuery.populate(options.populate);
+  }
+
   const [data, total] = await Promise.all([
-    model.find(query)
-      .select(options.select || '')
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .lean(),
+    dbQuery.lean(),
     model.countDocuments(query)
   ]);
 

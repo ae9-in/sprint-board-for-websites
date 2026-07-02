@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Layers, Plus, Calendar, Target, X, ChevronRight, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Layers, Plus, Calendar, Target, X, ChevronRight, Clock, CheckCircle2, AlertCircle, Users } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import { useSocket } from '../../contexts/SocketContext';
 
@@ -93,7 +93,15 @@ function SprintsPage() {
                   <h3 className="text-xl font-black text-premium group-hover:text-primary transition-colors mb-1 leading-tight">
                     {project.name}
                   </h3>
-                  <p className="text-white/40 text-sm mb-4">Client: {project.clientName}</p>
+                  <p className="text-white/40 text-sm mb-1 truncate">Client: {project.clientName}</p>
+                  <p className="text-white/40 text-sm mb-4 truncate flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />
+                    <span className="truncate">
+                      Assigned: {project.assignedUserIds && project.assignedUserIds.length > 0
+                        ? project.assignedUserIds.map(u => typeof u === 'object' && u !== null ? u.fullName : 'Member').filter(Boolean).join(', ')
+                        : 'Unassigned'}
+                    </span>
+                  </p>
                   <div className="mt-auto space-y-3">
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                       <div

@@ -53,7 +53,12 @@ router.get('/', auth, async (req, res, next) => {
     if (startDate) query.startDate = { $gte: new Date(startDate) };
     if (endDate) query.deadline = { $lte: new Date(endDate) };
 
-    const result = await paginate(Project, query, { page, limit, sort: { createdAt: -1 } });
+    const result = await paginate(Project, query, { 
+      page, 
+      limit, 
+      sort: { createdAt: -1 },
+      populate: { path: 'assignedUserIds', select: 'fullName email userType' }
+    });
 
     // Generate presigned URLs for any files if needed
 
@@ -295,7 +300,9 @@ router.patch('/:id', auth, async (req, res, next) => {
       query,
       { $set: updateData },
       { new: true, runValidators: true }
-    ).populate('assignedUserIds', 'fullName email userType');
+    )
+      .populate('assignedUserIds', 'fullName email userType')
+      .populate('createdBy', 'fullName email');
 
     // Log activity
     trackActivity({
@@ -510,6 +517,10 @@ router.post('/:projectId/stages/:stageType/approve', auth, async (req, res, next
     }
 
     await project.save();
+    await project.populate([
+      { path: 'assignedUserIds', select: 'fullName email userType' },
+      { path: 'createdBy', select: 'fullName email' }
+    ]);
 
     trackActivity({
       organizationId: req.user.organizationId,
@@ -579,7 +590,9 @@ router.post('/:projectId/stages/:stageType/reject', auth, async (req, res, next)
       });
     }
 
-    const project = await Project.findOne(orgQuery(req, { _id: req.params.projectId }));
+    const project = await Project.findOne(orgQuery(req, { _id: req.params.projectId }))
+      .populate('assignedUserIds', 'fullName email userType')
+      .populate('createdBy', 'fullName email');
 
     if (!project) {
       return res.status(404).json({
@@ -682,7 +695,9 @@ router.post('/:projectId/stages/:stageType/request-changes', auth, async (req, r
     }
 
     // Notify assigned users
-    const project = await Project.findById(req.params.projectId);
+    const project = await Project.findById(req.params.projectId)
+      .populate('assignedUserIds', 'fullName email userType')
+      .populate('createdBy', 'fullName email');
     for (const userId of project.assignedUserIds) {
       const notification = await Notification.create({
         organizationId: req.user.organizationId,

@@ -198,7 +198,15 @@ function Projects() {
                   <h3 className="text-xl sm:text-2xl font-black text-premium group-hover:text-primary transition-colors mb-2 leading-tight truncate">
                     {project.name}
                   </h3>
-                  <p className="text-white/40 text-sm font-medium mb-6 line-clamp-2">Client: {project.clientName}</p>
+                  <p className="text-white/40 text-sm font-medium mb-1 truncate">Client: {project.clientName}</p>
+                  <p className="text-white/40 text-sm font-medium mb-6 truncate flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-white/20 flex-shrink-0" />
+                    <span className="truncate">
+                      Assigned: {project.assignedUserIds && project.assignedUserIds.length > 0
+                        ? project.assignedUserIds.map(u => typeof u === 'object' && u !== null ? u.fullName : 'Member').filter(Boolean).join(', ')
+                        : 'Unassigned'}
+                    </span>
+                  </p>
 
                   <div className="space-y-4 mt-auto">
                     <div className="flex justify-between items-end gap-2">
